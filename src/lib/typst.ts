@@ -9,7 +9,7 @@ import type {
 } from '@myriaddreamin/typst.ts/dist/esm/internal.types.mjs';
 import docTempl from '$lib/assets/typst/official-doc.typ?raw';
 import tuzhang from '$lib/assets/typst/tuzhang.typ?raw';
-import eiStamp from '$lib/assets/typst/endfield-industries-stamp.png';
+import stampEndfieldInds from '$lib/assets/typst/stamp-endfield-industries.png';
 import { getAssetData, getFontBlobUrl } from '$lib';
 import { base } from '$app/paths';
 
@@ -141,7 +141,10 @@ export const initializeTypst = async () => {
       // Load template files and assets (triggers compiler init)
       await typst.addSource('/official-doc.typ', docTempl);
       await typst.addSource('/tuzhang.typ', tuzhang);
-      await typst.mapShadow('/endfield-industries-stamp.png', await getAssetData(eiStamp));
+      await typst.mapShadow(
+        '/stamp-endfield-industries.png',
+        await getAssetData(stampEndfieldInds)
+      );
 
       isInitialized = true;
       console.log(`Typst initialized`);

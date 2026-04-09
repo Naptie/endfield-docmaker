@@ -49,7 +49,7 @@ export const getTypstDocument = ({
   conf-period: none,
   urgen-level: none,
   ${authority2 ? `authorities: ("${authority1}", "${authority2}")` : `authority: ("${authority1}")`},
-  stamp-icon: image("endfield-industries-stamp.png", width: 63%),
+  stamp-icon: image("stamp-endfield-industries.png", width: 63%),
   stamp-shift: (5mm - ${Math.random() * 30}mm, 10mm - ${Math.random() * 40}mm),
   stamp-rotation: 25deg - ${Math.random() * 50}deg,
   issuer: "${m[`issuer_${issuer}`]()}",
