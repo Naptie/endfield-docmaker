@@ -1,7 +1,5 @@
 // Credit: Lonyou (https://github.com/Vkango)
 
-#set page(width: auto, height: auto)
-
 #let circular_seal(
   // 主要参数
   main_text, // 主文字（上方弧形）
