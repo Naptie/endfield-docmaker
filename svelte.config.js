@@ -1,5 +1,7 @@
 import adapter from '@sveltejs/adapter-static';
 
+const basePath = process.env.BASE_PATH ?? '';
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   compilerOptions: {
@@ -7,8 +9,15 @@ const config = {
     runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
   },
   kit: {
-    adapter: adapter(),
-    paths: { base: process.env.BASE_PATH ?? '' }
+    adapter: adapter(
+      basePath
+        ? {
+            pages: `build${basePath}`,
+            assets: `build${basePath}`
+          }
+        : {}
+    ),
+    paths: { base: basePath }
   }
 };
 
