@@ -92,7 +92,7 @@ pnpm build
 ## 致谢
 
 - [ParaN3xus](https://github.com/ParaN3xus) — 红头公文 Typst 模板 (`official-doc.typ`)
-- [Vkango](https://github.com/Vkango) — 圆形公章 Typst 模板 (`tuzhang.typ`)
+- [Lonyou](https://github.com/Vkango) — 圆形公章 Typst 模板 (`tuzhang.typ`)
 - [typst.ts](https://github.com/Myriad-Dreamin/typst.ts) — [Typst](https://typst.app) WebAssembly 编译器
 - [shadcn-svelte](https://www.shadcn-svelte.com) — UI 组件库
 
