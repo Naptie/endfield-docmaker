@@ -34,10 +34,8 @@ export default defineConfig({
       deleteOriginalAssets: true,
       include: /\.(html|xml|css|js|mjs|wasm|json|svg|otf|ttf|otc|ttc)$/,
       algorithms: [
-        defineAlgorithm('brotliCompress', {
-          params: {
-            [constants.BROTLI_PARAM_QUALITY]: 11
-          }
+        defineAlgorithm('gzip', {
+          level: constants.Z_BEST_COMPRESSION
         })
       ]
     })

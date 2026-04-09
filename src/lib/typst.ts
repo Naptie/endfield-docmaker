@@ -1,5 +1,5 @@
 import rendererWasmUrl from '@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url';
-import compilerWasmUrl from '@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm?url';
+import compilerWasmGzUrl from '@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm.gz?url';
 import { FetchPackageRegistry, MemoryAccessModel, $typst as typst } from '@myriaddreamin/typst.ts';
 import { TypstSnippet } from '@myriaddreamin/typst.ts/dist/esm/contrib/snippet.mjs';
 import type { WritableAccessModel } from '@myriaddreamin/typst.ts/dist/esm/fs/index.mjs';
@@ -110,6 +110,12 @@ class InjectedRegistry extends FetchPackageRegistry {
 //   return fontsLoadPromise;
 // };
 
+const fetchGzip = async (url: string): Promise<Response> => {
+  const res = await fetch(url);
+  const decompressed = res.body!.pipeThrough(new DecompressionStream('gzip'));
+  return new Response(decompressed, { headers: { 'Content-Type': 'application/wasm' } });
+};
+
 export const initializeTypst = async () => {
   if (initializationPromise) {
     return initializationPromise;
@@ -131,7 +137,7 @@ export const initializeTypst = async () => {
 
       // Configure WASM modules before any calls that trigger lazy init
       typst.setCompilerInitOptions({
-        getModule: () => compilerWasmUrl
+        getModule: () => fetchGzip(compilerWasmGzUrl)
       });
       typst.setRendererInitOptions({
         getModule: () => rendererWasmUrl
