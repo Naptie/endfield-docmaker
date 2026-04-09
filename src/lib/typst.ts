@@ -12,11 +12,11 @@ import { getAssetData, getFontBlobUrl } from '$lib';
 import docTempl from '$lib/assets/typst/official-doc.typ?raw';
 import tuzhang from '$lib/assets/typst/tuzhang.typ?raw';
 import stampEndfieldInds from '$lib/assets/typst/stamp-endfield-industries.png';
-import fontXiaoBiaoSong from '$lib/assets/typst/fonts/FZXIAOBIAOSONG-B05.TTF?url';
-import fontSimFang from '$lib/assets/typst/fonts/SIMFANG.TTF?url';
-import fontSimHei from '$lib/assets/typst/fonts/SIMHEI.TTF?url';
-import fontSimKai from '$lib/assets/typst/fonts/SIMKAI.TTF?url';
-import fontSTSong from '$lib/assets/typst/fonts/STSONG.TTF?url';
+import fontXiaoBiaoSong from '$lib/assets/fonts/FZXIAOBIAOSONG-B05.TTF?url';
+import fontSimFang from '$lib/assets/fonts/SIMFANG.TTF?url';
+import fontSimHei from '$lib/assets/fonts/SIMHEI.TTF?url';
+import fontSimKai from '$lib/assets/fonts/SIMKAI.TTF?url';
+import fontSTSong from '$lib/assets/fonts/STSONG.TTF?url';
 
 const fonts: { name: string; url: string }[] = [
   { name: 'FZXIAOBIAOSONG-B05.TTF', url: fontXiaoBiaoSong },
