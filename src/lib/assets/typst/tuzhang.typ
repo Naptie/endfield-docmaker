@@ -1,4 +1,4 @@
-// Credits: Lonyou (https://github.com/Vkango)
+// Credit: Lonyou (https://github.com/Vkango)
 
 #set page(width: auto, height: auto)
 
