@@ -9,6 +9,7 @@ import { constants } from 'zlib';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+const basePath = process.env.BASE_PATH ?? '';
 
 export default defineConfig({
   plugins: [
@@ -17,7 +18,16 @@ export default defineConfig({
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/lib/paraglide',
-      strategy: ['url', 'cookie', 'baseLocale']
+      strategy: ['url', 'cookie', 'baseLocale'],
+      urlPatterns: [
+        {
+          pattern: `:protocol://:domain(.*)::port?${basePath}/:path(.*)?`,
+          localized: [
+            ['en', `:protocol://:domain(.*)::port?${basePath}/en/:path(.*)?`],
+            ['zh', `:protocol://:domain(.*)::port?${basePath}/:path(.*)?`]
+          ]
+        }
+      ]
     }),
     compression({
       threshold: 1024 * 1024,

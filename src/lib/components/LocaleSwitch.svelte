@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { Pathname } from '$app/types';
-  import { resolve } from '$app/paths';
   import { page } from '$app/state';
   import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime';
   import { m } from '$lib/paraglide/messages';
@@ -17,8 +15,7 @@
   function onLocaleChange(value: string | undefined) {
     if (!value || value === getLocale()) return;
     const locale = value as (typeof locales)[number];
-    const href = resolve(localizeHref(page.url.pathname, { locale }) as Pathname);
-    window.location.href = href;
+    window.location.href = localizeHref(page.url.pathname, { locale });
   }
 </script>
 
@@ -40,6 +37,6 @@
 <!-- Hidden links for SEO / prerendering -->
 <div style="display:none">
   {#each locales as locale (locale)}
-    <a href={resolve(localizeHref(page.url.pathname, { locale }) as Pathname)}>{locale}</a>
+    <a href={localizeHref(page.url.pathname, { locale })}>{locale}</a>
   {/each}
 </div>
