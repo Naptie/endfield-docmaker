@@ -48,13 +48,21 @@
     let char_h = measure(sample).height
 
     // Natural per-char angle based on character width with slight gap
-    let natural_angle_per_char = (char_w * 1.5) / radius * 1rad
+    let natural_angle_per_char = (char_w * 1.2) / radius * 1rad
+    let natural_total = natural_angle_per_char * n
     // Total angle: natural spacing, capped at max_arc
-    let total_angle = calc.min(max_arc, natural_angle_per_char * n)
+    let total_angle = calc.min(max_arc, natural_total)
     let angle_step = if n > 1 { total_angle / (n - 1) } else { 0deg }
 
+    // If text overflows max_arc, compress each character horizontally
+    let x_scale = if natural_total > max_arc {
+      max_arc / natural_total * 100%
+    } else {
+      100%
+    }
+
     // Bounding box for placing each character (large enough for rotated glyph)
-    let cell = calc.max(char_w, char_h) * 1.5
+    let cell = calc.max(char_w, char_h) * 1.2
 
     let positioned_chars = ()
     for (i, char) in chars.enumerate() {
@@ -76,11 +84,11 @@
             height: cell,
             align(
               center + horizon,
-              rotate(rotation_angle, text(
+              rotate(rotation_angle, scale(x: x_scale, y: 100%, origin: center + horizon, text(
                 size: text_size,
                 fill: text_color,
                 weight: "bold",
-              )[#char]),
+              )[#char])),
             ),
           ),
         ),
