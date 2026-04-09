@@ -14,7 +14,7 @@
   import { Badge } from '$lib/components/ui/badge';
   import { getTypstDocument, pick, triggerDownload } from '$lib';
   import { onMount } from 'svelte';
-  import typst, { loadingStatus, waitForTypst } from '$lib/typst.svelte';
+  import typst, { loadingState, waitForTypst } from '$lib/typst.svelte';
   import Button from '$lib/components/ui/button/button.svelte';
 
   const issuers = ['endfield_industries'] as const;
@@ -322,8 +322,8 @@
         {:else}
           <div class="flex flex-col items-center justify-center gap-2 p-6">
             <Spinner class="size-10" />
-            {#if loadingStatus}
-              <p class="text-muted-foreground text-sm">{m[loadingStatus]()}</p>
+            {#if loadingState.status}
+              <p class="text-muted-foreground text-sm">{m[loadingState.status]()}</p>
             {/if}
           </div>
         {/if}
