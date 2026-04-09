@@ -8,6 +8,7 @@ import type {
   PackageSpec
 } from '@myriaddreamin/typst.ts/dist/esm/internal.types.mjs';
 import { getAssetData, getFontBlobUrl } from '$lib';
+import { dev } from '$app/environment';
 
 import docTempl from '$lib/assets/typst/official-doc.typ?raw';
 import tuzhang from '$lib/assets/typst/tuzhang.typ?raw';
@@ -139,7 +140,7 @@ export const initializeTypst = async () => {
       const injectedRegistry = new InjectedRegistry(accessModel);
 
       typst.setCompilerInitOptions({
-        getModule: () => fetchGzip(compilerWasmUrl + '.gz')
+        getModule: () => (dev ? compilerWasmUrl : fetchGzip(compilerWasmUrl + '.gz'))
       });
       typst.setRendererInitOptions({
         getModule: () => rendererWasmUrl
