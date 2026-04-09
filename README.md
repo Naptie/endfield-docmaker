@@ -22,6 +22,12 @@
 - 明暗主题切换
 - 中英双语界面
 
+## 部署
+
+- GitHub Pages: https://naptie.github.io/endfield-docmaker/
+- Cloudflare: https://endfield-docmaker.phi.zone/
+- Vercel: https://endfield.phi.zone/docmaker/
+
 ## 技术栈
 
 | 层级     | 技术                                                                                               |
