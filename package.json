@@ -58,5 +58,6 @@
     "@myriaddreamin/typst-ts-web-compiler": "0.7.0-rc2",
     "@myriaddreamin/typst.ts": "0.7.0-rc2",
     "mode-watcher": "^1.1.0"
-  }
+  },
+  "packageManager": "pnpm@10.33.0"
 }
