@@ -7,19 +7,24 @@ import type {
   PackageResolveContext,
   PackageSpec
 } from '@myriaddreamin/typst.ts/dist/esm/internal.types.mjs';
+import { getAssetData, getFontBlobUrl } from '$lib';
+
 import docTempl from '$lib/assets/typst/official-doc.typ?raw';
 import tuzhang from '$lib/assets/typst/tuzhang.typ?raw';
 import stampEndfieldInds from '$lib/assets/typst/stamp-endfield-industries.png';
-import { getAssetData, getFontBlobUrl } from '$lib';
-import { base } from '$app/paths';
+import fontXiaoBiaoSong from '$lib/assets/typst/fonts/FZXIAOBIAOSONG-B05.TTF?url';
+import fontSimFang from '$lib/assets/typst/fonts/SIMFANG.TTF?url';
+import fontSimHei from '$lib/assets/typst/fonts/SIMHEI.TTF?url';
+import fontSimKai from '$lib/assets/typst/fonts/SIMKAI.TTF?url';
+import fontSTSong from '$lib/assets/typst/fonts/STSONG.TTF?url';
 
 const fonts: { name: string; url: string }[] = [
-  'FZXIAOBIAOSONG-B05.TTF',
-  'SIMFANG.TTF',
-  'SIMHEI.TTF',
-  'SIMKAI.TTF',
-  'STSONG.TTF'
-].map((name) => ({ name, url: `${base}/fonts/${name}` }));
+  { name: 'FZXIAOBIAOSONG-B05.TTF', url: fontXiaoBiaoSong },
+  { name: 'SIMFANG.TTF', url: fontSimFang },
+  { name: 'SIMHEI.TTF', url: fontSimHei },
+  { name: 'SIMKAI.TTF', url: fontSimKai },
+  { name: 'STSONG.TTF', url: fontSTSong }
+];
 
 let isInitialized = false;
 let initializationPromise: Promise<void> | null = null;
