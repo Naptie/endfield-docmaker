@@ -31,8 +31,17 @@ export default defineConfig({
     }),
     compression({
       threshold: 1024 * 1024,
-      deleteOriginalAssets: true,
       include: /\.(html|xml|css|js|mjs|wasm|json|svg|otf|ttf|otc|ttc)$/,
+      exclude: /typst_ts_web_compiler_bg\.wasm$/,
+      algorithms: [
+        defineAlgorithm('gzip', {
+          level: constants.Z_BEST_COMPRESSION
+        })
+      ]
+    }),
+    compression({
+      deleteOriginalAssets: true,
+      include: /typst_ts_web_compiler_bg\.wasm$/,
       algorithms: [
         defineAlgorithm('gzip', {
           level: constants.Z_BEST_COMPRESSION
