@@ -1,5 +1,5 @@
 import rendererWasmUrl from '@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url';
-import compilerWasmGzUrl from '@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm.gz?url';
+import compilerWasmUrl from '@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm?url';
 import { FetchPackageRegistry, MemoryAccessModel, $typst as typst } from '@myriaddreamin/typst.ts';
 import { TypstSnippet } from '@myriaddreamin/typst.ts/dist/esm/contrib/snippet.mjs';
 import type { WritableAccessModel } from '@myriaddreamin/typst.ts/dist/esm/fs/index.mjs';
@@ -137,7 +137,7 @@ export const initializeTypst = async () => {
 
       // Configure WASM modules before any calls that trigger lazy init
       typst.setCompilerInitOptions({
-        getModule: () => fetchGzip(compilerWasmGzUrl)
+        getModule: () => fetchGzip(compilerWasmUrl + '.gz')
       });
       typst.setRendererInitOptions({
         getModule: () => rendererWasmUrl
