@@ -1,0 +1,5 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "app_name": "终末地文件生成器",
+  "toggle_theme": "切换主题"
+}
