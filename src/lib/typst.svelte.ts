@@ -28,6 +28,8 @@ const fonts: { name: string; url: string }[] = [
 
 let isInitialized = false;
 let initializationPromise: Promise<void> | null = null;
+type LoadingStatus = 'loading_fonts' | 'loading_wasm' | 'loading_templates' | '';
+export let loadingStatus: LoadingStatus = $state('');
 // let isFontsLoaded = false;
 // let fontsLoadPromise: Promise<{ fileName: string; url: string }[]> | null = null;
 // let cachedFonts: { fileName: string; url: string }[] = [];
@@ -128,14 +130,14 @@ export const initializeTypst = async () => {
   initializationPromise = (async () => {
     try {
       // Prepare fonts
-      //   await preloadFonts();
+      loadingStatus = 'loading_fonts';
       const blobUrls = await Promise.all(fonts.map((f) => getFontBlobUrl(f.url)));
 
-      // Init
+      // Configure WASM modules before any calls that trigger lazy init
+      loadingStatus = 'loading_wasm';
       const accessModel = new MemoryAccessModel();
       const injectedRegistry = new InjectedRegistry(accessModel);
 
-      // Configure WASM modules before any calls that trigger lazy init
       typst.setCompilerInitOptions({
         getModule: () => fetchGzip(compilerWasmUrl + '.gz')
       });
@@ -150,6 +152,7 @@ export const initializeTypst = async () => {
       );
 
       // Load template files and assets (triggers compiler init)
+      loadingStatus = 'loading_templates';
       await typst.addSource('/official-doc.typ', docTempl);
       await typst.addSource('/tuzhang.typ', tuzhang);
       await typst.mapShadow(
@@ -158,6 +161,7 @@ export const initializeTypst = async () => {
       );
 
       isInitialized = true;
+      loadingStatus = '';
       console.log(`Typst initialized`);
     } catch (e) {
       console.error('Error initializing Typst:', e);
