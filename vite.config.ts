@@ -31,6 +31,7 @@ export default defineConfig({
     }),
     compression({
       threshold: 1024 * 1024,
+      deleteOriginalAssets: true,
       include: /\.(html|xml|css|js|mjs|wasm|json|svg|otf|ttf|otc|ttc)$/,
       algorithms: [
         defineAlgorithm('brotliCompress', {
