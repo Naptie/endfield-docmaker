@@ -32,7 +32,7 @@ export default defineConfig({
     compression({
       threshold: 1024 * 1024,
       include: /\.(html|xml|css|js|mjs|wasm|json|svg|otf|ttf|otc|ttc)$/,
-      exclude: /typst_ts_web_compiler_bg\.wasm$/,
+      exclude: /typst_ts_web_compiler_bg\.[^.]+\.wasm$/,
       algorithms: [
         defineAlgorithm('gzip', {
           level: constants.Z_BEST_COMPRESSION
@@ -41,7 +41,7 @@ export default defineConfig({
     }),
     compression({
       deleteOriginalAssets: true,
-      include: /typst_ts_web_compiler_bg\.wasm$/,
+      include: /typst_ts_web_compiler_bg\.[^.]+\.wasm$/,
       algorithms: [
         defineAlgorithm('gzip', {
           level: constants.Z_BEST_COMPRESSION
