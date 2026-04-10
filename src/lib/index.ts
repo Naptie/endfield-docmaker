@@ -26,6 +26,8 @@ export const getTypstDocument = ({
   issuer,
   authority1,
   authority2,
+  authorityPrefix1,
+  authorityPrefix2,
   docTitle,
   refNo,
   issueDate: { year, month, day },
@@ -34,6 +36,8 @@ export const getTypstDocument = ({
   issuer: (typeof ISSUERS)[number]['key'];
   authority1: string;
   authority2: string;
+  authorityPrefix1: (typeof ISSUERS)[number]['key'];
+  authorityPrefix2: (typeof ISSUERS)[number]['key'];
   docTitle: string;
   refNo: string;
   issueDate: { year: number; month: number; day: number };
@@ -47,7 +51,7 @@ export const getTypstDocument = ({
   conf-period: none,
   urgen-level: none,
   ${authority2 ? `authorities: ("${authority1}", "${authority2}")` : `authority: ("${authority1}")`},
-  stamp-icon: image("stamp-${issuer}.png"),
+  stamp-icons: (${authority2 ? `image("stamp-${authorityPrefix1}.png"), image("stamp-${authorityPrefix2}.png")` : `image("stamp-${authorityPrefix1}.png"),`}),
   watermark-icon: image("watermark-${issuer}.png"),
   issuer: "${m[`issuer_${issuer}`]()}",
   title: "${docTitle}",

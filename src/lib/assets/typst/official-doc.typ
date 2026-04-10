@@ -31,7 +31,7 @@
   urgen-level: "平件",
   authority: none,
   authorities: none,
-  stamp-icon: none,
+  stamp-icons: (),
   watermark-icon: none,
   issuer: "✕✕✕",
   title: "✕✕✕✕✕关于✕✕✕✕✕✕的通知",
@@ -186,7 +186,7 @@
 
   align(right)[
     #box[
-      #if stamp-icon != none {
+      #if stamp-icons.len() > 0 {
         let rng = gen-rng-f(seed)
         let params = ()
         for i in range(resolved-authorities.len()) {
@@ -197,7 +197,7 @@
             dy: -10mm - params.at(1) * 5mm,
             rotate(8deg - params.at(2) * 16deg, circular_stamp(
               resolved-authorities.at(resolved-authorities.len() - i - 1),
-              stamp-icon,
+              stamp-icons.at(resolved-authorities.len() - i - 1),
               inner_ring_width: 0pt,
               text_color: dark-red,
               border_color: dark-red,

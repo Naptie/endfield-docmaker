@@ -19,15 +19,15 @@
   import Button from '$lib/components/ui/button/button.svelte';
   import { ISSUERS } from '$lib/constants';
 
-  const authorityPrefixes = ['终末地', '武陵区', '清波寨'] as const;
-
   let isReady = $state(false);
   let isGenerating = $state(false);
 
   let issuer = $state<(typeof ISSUERS)[number]['key']>(ISSUERS[0].key);
   let issuerName = $derived(m[`issuer_${issuer}`]());
-  let authorityPrefix1 = $state<(typeof authorityPrefixes)[number]>(authorityPrefixes[0]);
-  let authorityPrefix2 = $state<(typeof authorityPrefixes)[number]>(authorityPrefixes[0]);
+  let authorityPrefix1 = $state<typeof issuer>(ISSUERS[0].key);
+  let authorityPrefixName1 = $derived(m[`prefix_${authorityPrefix1}`]());
+  let authorityPrefix2 = $state<typeof issuer>(ISSUERS[0].key);
+  let authorityPrefixName2 = $derived(m[`prefix_${authorityPrefix2}`]());
   let authority1 = $state('纪律检查委员会');
   let authority2 = $state('人事管理局');
   let refNo = $state('1');
@@ -68,7 +68,7 @@
 `);
 
   const STORAGE_KEY = 'endfield-doc';
-  const STORAGE_VERSION = 1;
+  const STORAGE_VERSION = 2;
 
   const saveToStorage = () => {
     try {
@@ -139,8 +139,10 @@
         '/main.typ',
         getTypstDocument({
           issuer,
-          authority1: authorityPrefix1 + authority1,
-          authority2: authority2 ? authorityPrefix2 + authority2 : '',
+          authority1: authorityPrefixName1 + authority1,
+          authority2: authority2 ? authorityPrefixName2 + authority2 : '',
+          authorityPrefix1,
+          authorityPrefix2,
           refNo,
           docTitle,
           issueDate: parseDate(issueDate),
@@ -245,11 +247,11 @@
             <div class="flex">
               <Select type="single" bind:value={authorityPrefix1} disabled={!isReady}>
                 <SelectTrigger class="w-auto shrink-0 rounded-r-none border-r-0">
-                  {authorityPrefix1}
+                  {authorityPrefixName1}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each authorityPrefixes as prefix (prefix)}
-                    <SelectItem value={prefix} label={prefix} />
+                  {#each ISSUERS as issuer (issuer.key)}
+                    <SelectItem value={issuer.key} label={m[`prefix_${issuer.key}`]()} />
                   {/each}
                 </SelectContent>
               </Select>
@@ -269,11 +271,11 @@
             <div class="flex">
               <Select type="single" bind:value={authorityPrefix2} disabled={!isReady}>
                 <SelectTrigger class="w-auto shrink-0 rounded-r-none border-r-0">
-                  {authorityPrefix2}
+                  {authorityPrefixName2}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each authorityPrefixes as prefix (prefix)}
-                    <SelectItem value={prefix} label={prefix} />
+                  {#each ISSUERS as issuer (issuer)}
+                    <SelectItem value={issuer.key} label={m[`prefix_${issuer.key}`]()} />
                   {/each}
                 </SelectContent>
               </Select>
