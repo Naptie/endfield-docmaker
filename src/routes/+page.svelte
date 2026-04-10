@@ -1,8 +1,9 @@
 <script lang="ts">
+  /* eslint-disable svelte/no-at-html-tags */
   import { m } from '$lib/paraglide/messages';
   import { getLocale } from '$lib/paraglide/runtime';
-  import endfieldLogoEn from '$lib/assets/endfield-en.svg';
-  import endfieldLogoZh from '$lib/assets/endfield-zh.svg';
+  import endfieldLogoEn from '$lib/assets/endfield-en.svg?raw';
+  import endfieldLogoZh from '$lib/assets/endfield-zh.svg?raw';
   import { Input } from '$lib/components/ui/input';
   import { Textarea } from '$lib/components/ui/textarea';
   import { Label } from '$lib/components/ui/label';
@@ -184,11 +185,13 @@
   ></div>
   <div class="relative flex flex-col items-center gap-6">
     <div class="flex items-center gap-4">
-      <img
-        src={getLocale() === 'zh' ? endfieldLogoZh : endfieldLogoEn}
-        alt="Endfield Logo"
-        class="h-16 drop-shadow-md sm:h-20 dark:invert"
-      />
+      <div
+        role="img"
+        aria-label="Endfield Logo"
+        class="h-16 drop-shadow-md sm:h-20 dark:invert [&>svg]:h-full [&>svg]:w-auto"
+      >
+        {@html getLocale() === 'zh' ? endfieldLogoZh : endfieldLogoEn}
+      </div>
       <div class="mt-2">
         <h1 class="font-sans text-3xl font-bold tracking-tight sm:text-5xl">
           {m.app_name()}
