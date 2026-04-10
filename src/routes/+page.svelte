@@ -19,6 +19,18 @@
   import { ISSUERS } from '$lib/constants';
   import PlusIcon from '@lucide/svelte/icons/plus';
   import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
+  import { slide } from 'svelte/transition';
+
+  const authorityNames = [
+    '纪律检查委员会',
+    '人事管理局',
+    '摸鱼事务所',
+    '后勤保障部',
+    '危机处理小组',
+    '特种技术部门',
+    '安全监察处',
+    '综合协调办公室'
+  ];
 
   let isReady = $state(false);
   let isGenerating = $state(false);
@@ -26,8 +38,8 @@
   let issuer = $state<(typeof ISSUERS)[number]['key']>(ISSUERS[0].key);
   let issuerName = $derived(m[`issuer_${issuer}`]());
   let authorities = $state<Authority[]>([
-    { faction: ISSUERS[0].key, name: '纪律检查委员会' },
-    { faction: ISSUERS[0].key, name: '人事管理局' }
+    { faction: ISSUERS[0].key, name: authorityNames[0] },
+    { faction: ISSUERS[0].key, name: authorityNames[1] }
   ]);
   const MAX_AUTHORITIES = 9;
   let dragIndex = $state<number | null>(null);
@@ -242,7 +254,13 @@
                 size="sm"
                 class="h-7 cursor-pointer text-xs"
                 onclick={() => {
-                  authorities = [...authorities, { faction: ISSUERS[0].key, name: '' }];
+                  authorities = [
+                    ...authorities,
+                    {
+                      faction: pick(Array.from(ISSUERS)).key,
+                      name: pick(authorityNames)
+                    }
+                  ];
                 }}
                 disabled={!isReady}
               >
@@ -287,6 +305,7 @@
                 dragOverIndex = null;
               }}
               role="listitem"
+              transition:slide
             >
               {#if authorities.length > 1}
                 <span
