@@ -33,6 +33,7 @@
   stamp-icon: none,
   stamp-shift: (-12mm, -18mm),
   stamp-rotation: -10deg,
+  watermark-icon: none,
   issuer: "✕✕✕",
   title: "✕✕✕✕✕关于✕✕✕✕✕✕的通知",
   issue-date: datetime.today(),
@@ -54,6 +55,10 @@
     if (calc.odd(x)) {
       "　"
     }
+  })
+
+  set page(background: if watermark-icon != none {
+    place(center + horizon, block(width: 40%, watermark-icon))
   })
 
   set text(font: "FangSong", size: 16pt, lang: "zh")
@@ -188,12 +193,9 @@
           rotate(stamp-rotation, circular_seal(
             if authority != none { authority } else { resolved-authorities.first() },
             stamp-icon,
-            main_text_size: 1.2em,
             inner_ring_width: 0pt,
-            show_star: false,
             text_color: pure-red,
             border_color: pure-red,
-            star_color: pure-red,
           )),
         )
       }

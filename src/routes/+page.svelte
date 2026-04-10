@@ -18,13 +18,16 @@
   import Button from '$lib/components/ui/button/button.svelte';
 
   const issuers = ['endfield_industries'] as const;
+  const authorityPrefixes = ['终末地', '武陵区', '清波寨'] as const;
 
   let isReady = $state(false);
 
   let issuer = $state<(typeof issuers)[number]>(issuers[0]);
   let issuerName = $derived(m[`issuer_${issuer}`]());
-  let authority1 = $state('终末地纪律检查委员会');
-  let authority2 = $state('终末地人事管理局');
+  let authorityPrefix1 = $state<(typeof authorityPrefixes)[number]>(authorityPrefixes[0]);
+  let authorityPrefix2 = $state<(typeof authorityPrefixes)[number]>(authorityPrefixes[0]);
+  let authority1 = $state('纪律检查委员会');
+  let authority2 = $state('人事管理局');
   let refNo = $state('1');
   let docTitle = $state('关于终末地相关人员人事管理\n违规问题的调查处理通报');
   let issueDate = $state({ year: '152', month: '1', day: '29' });
@@ -63,12 +66,24 @@
 `);
 
   const STORAGE_KEY = 'endfield-doc';
+  const STORAGE_VERSION = 1;
 
   const saveToStorage = () => {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ issuer, authority1, authority2, refNo, docTitle, issueDate, docContent })
+        JSON.stringify({
+          version: STORAGE_VERSION,
+          issuer,
+          authorityPrefix1,
+          authorityPrefix2,
+          authority1,
+          authority2,
+          refNo,
+          docTitle,
+          issueDate,
+          docContent
+        })
       );
     } catch (e) {
       console.error('Error saving to storage:', e);
@@ -80,7 +95,10 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const data = JSON.parse(raw);
+      if (data.version !== STORAGE_VERSION) return;
       if (data.issuer) issuer = data.issuer;
+      if (data.authorityPrefix1 !== undefined) authorityPrefix1 = data.authorityPrefix1;
+      if (data.authorityPrefix2 !== undefined) authorityPrefix2 = data.authorityPrefix2;
       if (data.authority1 !== undefined) authority1 = data.authority1;
       if (data.authority2 !== undefined) authority2 = data.authority2;
       if (data.refNo !== undefined) refNo = data.refNo;
@@ -114,6 +132,8 @@
   $effect(() => {
     // Debounce input changes to avoid excessive PDF regeneration
     void issuer;
+    void authorityPrefix1;
+    void authorityPrefix2;
     void authority1;
     void authority2;
     void refNo;
@@ -129,8 +149,8 @@
         '/main.typ',
         getTypstDocument({
           issuer,
-          authority1,
-          authority2,
+          authority1: authorityPrefix1 + authority1,
+          authority2: authority2 ? authorityPrefix2 + authority2 : '',
           refNo,
           docTitle,
           issueDate: parseDate(issueDate),
@@ -213,7 +233,19 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="space-y-2">
             <Label>{m.authority_1()}</Label>
-            <Input bind:value={authority1} disabled={!isReady} />
+            <div class="flex">
+              <Select type="single" bind:value={authorityPrefix1} disabled={!isReady}>
+                <SelectTrigger class="w-auto shrink-0 rounded-r-none border-r-0">
+                  {authorityPrefix1}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each authorityPrefixes as prefix (prefix)}
+                    <SelectItem value={prefix} label={prefix} />
+                  {/each}
+                </SelectContent>
+              </Select>
+              <Input bind:value={authority1} disabled={!isReady} class="rounded-l-none" />
+            </div>
           </div>
           <div class="space-y-2">
             <Label class="relative">
@@ -225,7 +257,19 @@
                 {m.optional()}
               </Badge>
             </Label>
-            <Input bind:value={authority2} disabled={!isReady} />
+            <div class="flex">
+              <Select type="single" bind:value={authorityPrefix2} disabled={!isReady}>
+                <SelectTrigger class="w-auto shrink-0 rounded-r-none border-r-0">
+                  {authorityPrefix2}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each authorityPrefixes as prefix (prefix)}
+                    <SelectItem value={prefix} label={prefix} />
+                  {/each}
+                </SelectContent>
+              </Select>
+              <Input bind:value={authority2} disabled={!isReady} class="rounded-l-none" />
+            </div>
           </div>
         </div>
 

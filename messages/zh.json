@@ -3,6 +3,7 @@
   "app_name": "终末地公文生成器",
   "authority_1": "签发机构（主要）",
   "authority_2": "签发机构（次要）",
+  "authority_prefix": "签发机构前缀",
   "compile_error": "编译错误",
   "compile_error_desc": "生成文档时发生错误：",
   "doc_content": "文件正文",

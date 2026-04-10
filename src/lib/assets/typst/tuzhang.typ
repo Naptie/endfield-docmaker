@@ -12,30 +12,16 @@
   // 颜色参数
   border_color: red, // 边线颜色
   text_color: red, // 文字颜色
-  star_color: red, // 五角星颜色
   // 文字大小
   main_text_size: 18pt, // 主文字大小
-  sub_text_size: 15pt, // 副文字大小
-  // 五角星参数
-  star_size: 20pt, // 五角星大小
-  show_star: true, // 是否显示五角星
+  sub_text_size: 14pt, // 副文字大小
+  // 中心内容宽度
+  center_content_width: auto, // 中心内容固定宽度
   // 弧度参数
   main_max_arc: 240deg, // 主文字最大弧度
   sub_max_arc: 120deg, // 副文字最大弧度
 ) = context {
   set text(font: "STSong")
-
-  let create_star(size: 8pt, color: red) = {
-    let star_points = ()
-    for i in range(5) {
-      let angle1 = i * 72deg - 90deg
-      let angle2 = (i + 0.5) * 72deg - 90deg
-      star_points.push((calc.cos(angle1) * size, calc.sin(angle1) * size))
-      star_points.push((calc.cos(angle2) * size * 0.4, calc.sin(angle2) * size * 0.4))
-    }
-
-    polygon(..star_points, fill: color, stroke: none)
-  }
 
   let circular_text(text_content, radius, start_angle: -90deg, is_top: true, text_size: 10pt, max_arc: 240deg) = {
     let chars = text_content.clusters()
@@ -115,7 +101,7 @@
 
       for char_elem in circular_text(
         main_text,
-        outer_radius - 20pt,
+        outer_radius - main_text_size,
         start_angle: -90deg,
         is_top: true,
         text_size: main_text_size,
@@ -127,7 +113,7 @@
       if sub_text != none {
         for char_elem in circular_text(
           sub_text,
-          outer_radius - 16pt,
+          outer_radius - sub_text_size,
           start_angle: 90deg,
           is_top: false,
           text_size: sub_text_size,
@@ -137,14 +123,9 @@
         }
       }
 
-      if show_star {
-        place(center + horizon, {
-          create_star(size: star_size, color: star_color)
-        })
-      }
-
       // Center content (text, image, or any content)
-      place(center + horizon, center_content)
+      let resolved-width = if center_content_width == auto { outer_radius * 1.15 } else { center_content_width }
+      place(center + horizon, box(width: resolved-width, center_content))
     })
   })
 }

@@ -7,17 +7,22 @@ import type {
   PackageResolveContext,
   PackageSpec
 } from '@myriaddreamin/typst.ts/dist/esm/internal.types.mjs';
-import { getAssetData, getFontBlobUrl } from '$lib';
+import { getFontBlobUrl } from '$lib';
+import { tintImage } from '$lib/tint';
 import { dev } from '$app/environment';
 
 import docTempl from '$lib/assets/typst/official-doc.typ?raw';
 import tuzhang from '$lib/assets/typst/tuzhang.typ?raw';
-import stampEndfieldInds from '$lib/assets/typst/stamp-endfield-industries.png';
 import fontXiaoBiaoSong from '$lib/assets/fonts/FZXIAOBIAOSONG-B05.TTF?url';
 import fontSimFang from '$lib/assets/fonts/SIMFANG.TTF?url';
 import fontSimHei from '$lib/assets/fonts/SIMHEI.TTF?url';
 import fontSimKai from '$lib/assets/fonts/SIMKAI.TTF?url';
 import fontSTSong from '$lib/assets/fonts/STSONG.TTF?url';
+import endfieldIndustriesLogo from '$lib/assets/logos/endfield-industries.png';
+
+const logos: { issuer: string; url: string }[] = [
+  { issuer: 'endfield_industries', url: endfieldIndustriesLogo }
+];
 
 const fonts: { name: string; url: string }[] = [
   { name: 'FZXIAOBIAOSONG-B05.TTF', url: fontXiaoBiaoSong },
@@ -156,9 +161,19 @@ export const initializeTypst = async () => {
       loadingState.status = 'loading_templates';
       await typst.addSource('/official-doc.typ', docTempl);
       await typst.addSource('/tuzhang.typ', tuzhang);
-      await typst.mapShadow(
-        '/stamp-endfield-industries.png',
-        await getAssetData(stampEndfieldInds)
+
+      // Tint logos and register as shadow files
+      await Promise.all(
+        logos.map(async ({ issuer, url }) => {
+          const [redTinted, blackTinted] = await Promise.all([
+            tintImage(url, [210, 0, 0], 1, true),
+            tintImage(url, [0, 0, 0], 0.25)
+          ]);
+          await Promise.all([
+            typst.mapShadow(`/stamp-${issuer}.png`, redTinted),
+            typst.mapShadow(`/watermark-${issuer}.png`, blackTinted)
+          ]);
+        })
       );
 
       isInitialized = true;

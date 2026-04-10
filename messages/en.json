@@ -3,6 +3,7 @@
   "app_name": "Endfield Docmaker",
   "authority_1": "Authority (Primary)",
   "authority_2": "Authority (Secondary)",
+  "authority_prefix": "Authority Prefix",
   "compile_error": "Compilation Error",
   "compile_error_desc": "An error occurred while generating the document:",
   "doc_content": "Document Content",
