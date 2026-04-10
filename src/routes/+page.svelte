@@ -178,7 +178,7 @@
 </script>
 
 <!-- Hero Section -->
-<section class="relative flex flex-col items-center justify-center px-6 pt-20 pb-12">
+<section class="relative flex flex-col items-center justify-center px-6 pt-12 pb-10">
   <div
     class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--color-muted)_0%,transparent_70%)]"
   ></div>
@@ -205,7 +205,7 @@
 
 <!-- Document Maker Section -->
 <section
-  class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 md:flex md:min-h-[calc(100vh-18rem)] md:flex-col md:px-8"
+  class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 md:flex md:min-h-[calc(100vh-15rem)] md:flex-col md:px-8"
 >
   <div class="grid grid-cols-1 gap-6 md:flex-1 md:grid-cols-2 md:grid-rows-[1fr]">
     <!-- Left: Form -->

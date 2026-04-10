@@ -127,6 +127,6 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-mono;
+    @apply font-mono text-[16px];
   }
 }
