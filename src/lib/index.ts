@@ -1,4 +1,5 @@
 import { m } from '$lib/paraglide/messages';
+import type { ISSUERS } from './constants';
 
 export const pick = <T>(items: T[]): T => items[Math.floor(Math.random() * items.length)];
 
@@ -30,17 +31,14 @@ export const getTypstDocument = ({
   issueDate: { year, month, day },
   docContent
 }: {
-  issuer: string;
+  issuer: (typeof ISSUERS)[number]['key'];
   authority1: string;
   authority2: string;
   docTitle: string;
   refNo: string;
   issueDate: { year: number; month: number; day: number };
   docContent: string;
-}): string => {
-  switch (issuer) {
-    case 'endfield_industries':
-      return `
+}): string => `
 #import "official-doc.typ": *
 
 #show: official-doc.with(
@@ -59,7 +57,3 @@ export const getTypstDocument = ({
 
 ${docContent}
 `;
-    default:
-      throw new Error(`Unknown issuer: ${issuer}`);
-  }
-};

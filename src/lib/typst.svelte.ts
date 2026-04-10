@@ -20,12 +20,7 @@ import fontSimKai from '$lib/assets/fonts/SIMKAI.TTF?url';
 import fontSTSong from '$lib/assets/fonts/STSONG.TTF?url';
 import fontJBMono from '$lib/assets/fonts/JetBrainsMono-VariableFont_wght.ttf?url';
 import fontNewCMMath from '$lib/assets/fonts/NewCMMath-Regular.otf?url';
-
-import endfieldIndustriesLogo from '$lib/assets/logos/endfield-industries.png';
-
-const logos: { issuer: string; url: string }[] = [
-  { issuer: 'endfield_industries', url: endfieldIndustriesLogo }
-];
+import { ISSUERS } from './constants';
 
 const fonts: { name: string; url: string }[] = [
   { name: 'FZXIAOBIAOSONG-B05.TTF', url: fontXiaoBiaoSong },
@@ -169,14 +164,14 @@ export const initializeTypst = async () => {
 
       // Tint logos and register as shadow files
       await Promise.all(
-        logos.map(async ({ issuer, url }) => {
+        ISSUERS.map(async ({ key, url }) => {
           const [redTinted, blackTinted] = await Promise.all([
             tintImage(url, [210, 0, 0], 1, true),
             tintImage(url, [0, 0, 0], 0.25)
           ]);
           await Promise.all([
-            typst.mapShadow(`/stamp-${issuer}.png`, redTinted),
-            typst.mapShadow(`/watermark-${issuer}.png`, blackTinted)
+            typst.mapShadow(`/stamp-${key}.png`, redTinted),
+            typst.mapShadow(`/watermark-${key}.png`, blackTinted)
           ]);
         })
       );

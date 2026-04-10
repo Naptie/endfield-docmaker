@@ -17,14 +17,14 @@
   import { onMount } from 'svelte';
   import typst, { loadingState, waitForTypst } from '$lib/typst.svelte';
   import Button from '$lib/components/ui/button/button.svelte';
+  import { ISSUERS } from '$lib/constants';
 
-  const issuers = ['endfield_industries'] as const;
   const authorityPrefixes = ['终末地', '武陵区', '清波寨'] as const;
 
   let isReady = $state(false);
   let isGenerating = $state(false);
 
-  let issuer = $state<(typeof issuers)[number]>(issuers[0]);
+  let issuer = $state<(typeof ISSUERS)[number]['key']>(ISSUERS[0].key);
   let issuerName = $derived(m[`issuer_${issuer}`]());
   let authorityPrefix1 = $state<(typeof authorityPrefixes)[number]>(authorityPrefixes[0]);
   let authorityPrefix2 = $state<(typeof authorityPrefixes)[number]>(authorityPrefixes[0]);
@@ -133,20 +133,20 @@
 
   const generatePDF = async () => {
     isGenerating = true;
-    await waitForTypst();
-    await typst.addSource(
-      '/main.typ',
-      getTypstDocument({
-        issuer,
-        authority1: authorityPrefix1 + authority1,
-        authority2: authority2 ? authorityPrefix2 + authority2 : '',
-        refNo,
-        docTitle,
-        issueDate: parseDate(issueDate),
-        docContent
-      })
-    );
     try {
+      await waitForTypst();
+      await typst.addSource(
+        '/main.typ',
+        getTypstDocument({
+          issuer,
+          authority1: authorityPrefix1 + authority1,
+          authority2: authority2 ? authorityPrefix2 + authority2 : '',
+          refNo,
+          docTitle,
+          issueDate: parseDate(issueDate),
+          docContent
+        })
+      );
       const data = await typst.pdf();
       if (!data) return;
       const blob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
@@ -231,8 +231,8 @@
               {issuer ? issuerName : m.select_issuer()}
             </SelectTrigger>
             <SelectContent>
-              {#each issuers as issuer (issuer)}
-                <SelectItem value={issuer} label={issuerName} />
+              {#each ISSUERS as issuer (issuer.key)}
+                <SelectItem value={issuer.key} label={m[`issuer_${issuer.key}`]()} />
               {/each}
             </SelectContent>
           </Select>

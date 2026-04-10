@@ -8,6 +8,11 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
   });
 };
 
+const getEffectiveOpacity = (red: number, green: number, blue: number, alpha: number): number => {
+  const luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  return (luminance * alpha) / 255;
+};
+
 /**
  * Shift an image so its alpha-weighted centroid sits at the geometric center.
  * Returns a canvas with the recentered content (square, sized to fit).
@@ -26,11 +31,17 @@ const recenterImage = (img: HTMLImageElement): OffscreenCanvas => {
     totalWeight = 0;
   for (let y = 0; y < tmp.height; y++) {
     for (let x = 0; x < tmp.width; x++) {
-      const alpha = data[(tmp.width * y + x) * 4 + 3];
-      if (alpha > 0) {
-        sumX += x * alpha;
-        sumY += y * alpha;
-        totalWeight += alpha;
+      const offset = (tmp.width * y + x) * 4;
+      const weight = getEffectiveOpacity(
+        data[offset],
+        data[offset + 1],
+        data[offset + 2],
+        data[offset + 3]
+      );
+      if (weight > 0) {
+        sumX += x * weight;
+        sumY += y * weight;
+        totalWeight += weight;
       }
     }
   }
@@ -78,13 +89,14 @@ export const tintImage = async (
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const { data } = imageData;
-  const [r, g, b] = color.map((c) => c / 255);
 
   for (let i = 0; i < data.length; i += 4) {
-    data[i] = data[i] * r;
-    data[i + 1] = data[i + 1] * g;
-    data[i + 2] = data[i + 2] * b;
-    data[i + 3] = data[i + 3] * alpha;
+    data[i + 3] = Math.round(
+      getEffectiveOpacity(data[i], data[i + 1], data[i + 2], data[i + 3]) * alpha
+    );
+    data[i] = color[0];
+    data[i + 1] = color[1];
+    data[i + 2] = color[2];
   }
 
   ctx.putImageData(imageData, 0, 0);
