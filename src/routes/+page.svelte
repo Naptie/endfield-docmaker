@@ -188,7 +188,7 @@
       <div
         role="img"
         aria-label="Endfield Logo"
-        class="h-16 drop-shadow-md sm:h-20 dark:invert [&>svg]:h-full [&>svg]:w-auto"
+        class="h-16 drop-shadow-md sm:h-20 dark:text-white [&>svg]:h-full [&>svg]:w-auto"
       >
         {@html getLocale() === 'zh' ? endfieldLogoZh : endfieldLogoEn}
       </div>
