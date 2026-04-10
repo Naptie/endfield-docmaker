@@ -13,7 +13,7 @@
   import { Spinner } from '$lib/components/ui/spinner';
   import { Separator } from '$lib/components/ui/separator';
   import { Badge } from '$lib/components/ui/badge';
-  import { getTypstDocument, pick, triggerDownload } from '$lib';
+  import { getTypstDocument, pick } from '$lib';
   import { onMount } from 'svelte';
   import typst, { loadingState, waitForTypst } from '$lib/typst.svelte';
   import Button from '$lib/components/ui/button/button.svelte';
@@ -332,7 +332,7 @@
           >
             {m.open_in_new_tab()}
           </Button>
-          <Button
+          <!-- <Button
             variant="outline"
             size="sm"
             onclick={() =>
@@ -343,7 +343,7 @@
             disabled={!pdf}
           >
             {m.download()}
-          </Button>
+          </Button> -->
         </div>
       </CardHeader>
       <CardContent class="min-h-150 flex-1 p-0 pb-0">

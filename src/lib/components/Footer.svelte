@@ -3,7 +3,7 @@
   import { Button } from '$lib/components/ui/button';
   import GithubIcon from 'phosphor-svelte/lib/GithubLogoIcon';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import LocaleSwitch from '$lib/components/LocaleSwitch.svelte';
+  // import LocaleSwitch from '$lib/components/LocaleSwitch.svelte';
 
   const version = __APP_VERSION__;
   const commitHash = __COMMIT_HASH__;
@@ -27,7 +27,7 @@
     </div>
 
     <div class="flex items-center gap-1">
-      <LocaleSwitch />
+      <!-- <LocaleSwitch /> -->
       <ThemeToggle />
       <Button
         variant="ghost"
