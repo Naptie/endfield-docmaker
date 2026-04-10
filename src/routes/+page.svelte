@@ -17,6 +17,7 @@
   import typst, { loadingState, waitForTypst } from '$lib/typst.svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { ISSUERS } from '$lib/constants';
+  import PlusIcon from '@lucide/svelte/icons/plus';
   import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
 
   let isReady = $state(false);
@@ -245,7 +246,8 @@
                 }}
                 disabled={!isReady}
               >
-                + {m.add_authority()}
+                <PlusIcon class="size-4" />
+                {m.add_authority()}
               </Button>
             {/if}
           </div>
