@@ -5,7 +5,7 @@
 #import "tuzhang.typ": circular_seal
 
 #let pure-v(length) = block(v(length), width: 100%, outset: 0pt, inset: 0pt, below: 0pt, spacing: 0pt)
-#let pure-red = rgb(210, 0, 0)
+#let dark-red = rgb(210, 0, 0)
 
 #let noindent() = h(-2em)
 
@@ -81,7 +81,7 @@
   }
 
   align(center, {
-    set text(font: "FZXiaoBiaoSong-B05", size: 36pt, fill: pure-red)
+    set text(font: "FZXiaoBiaoSong-B05", size: 36pt, fill: dark-red)
     let target-width = 156mm // 210mm (A4) - 28mm (inside) - 26mm (outside)
     context {
       if authority != none or resolved-authorities.len() == 1 {
@@ -120,7 +120,7 @@
     block(text(size: 16pt, issuer + "〔" + str(issue-date.year()) + "〕" + str(ref-no) + "号")),
   )
 
-  line(length: 100%, stroke: 3pt + pure-red)
+  line(length: 100%, stroke: 3pt + dark-red)
 
   pure-v(20mm)
 
@@ -195,8 +195,8 @@
             if authority != none { authority } else { resolved-authorities.first() },
             stamp-icon,
             inner_ring_width: 0pt,
-            text_color: pure-red,
-            border_color: pure-red,
+            text_color: dark-red,
+            border_color: dark-red,
           )),
         )
       }
