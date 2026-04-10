@@ -2,7 +2,8 @@
 
 #import "@preview/cuti:0.3.0": fakebold, show-cn-fakebold
 #import "@preview/numbly:0.1.0": numbly
-#import "tuzhang.typ": circular_seal
+#import "@preview/suiji:0.5.1": gen-rng-f, random-f
+#import "tuzhang.typ": circular_stamp
 
 #let pure-v(length) = block(v(length), width: 100%, outset: 0pt, inset: 0pt, below: 0pt, spacing: 0pt)
 #let dark-red = rgb(210, 0, 0)
@@ -31,12 +32,11 @@
   authority: none,
   authorities: none,
   stamp-icon: none,
-  stamp-shift: (-12mm, -18mm),
-  stamp-rotation: -10deg,
   watermark-icon: none,
   issuer: "✕✕✕",
   title: "✕✕✕✕✕关于✕✕✕✕✕✕的通知",
   issue-date: datetime.today(),
+  seed: 0,
   content,
 ) = {
   assert(authority != none or authorities != none, message: "Either 'authority' or 'authorities' must be specified")
@@ -187,18 +187,23 @@
   align(right)[
     #box[
       #if stamp-icon != none {
-        place(
-          center + horizon,
-          dx: stamp-shift.first(),
-          dy: stamp-shift.last(),
-          rotate(stamp-rotation, circular_seal(
-            if authority != none { authority } else { resolved-authorities.first() },
-            stamp-icon,
-            inner_ring_width: 0pt,
-            text_color: dark-red,
-            border_color: dark-red,
-          )),
-        )
+        let rng = gen-rng-f(seed)
+        let params = ()
+        for i in range(resolved-authorities.len()) {
+          (rng, params) = random-f(rng, size: 3)
+          place(
+            center + horizon,
+            dx: -i * 140pt + (5mm - params.at(0) * 10mm),
+            dy: -10mm - params.at(1) * 5mm,
+            rotate(8deg - params.at(2) * 16deg, circular_stamp(
+              resolved-authorities.at(resolved-authorities.len() - i - 1),
+              stamp-icon,
+              inner_ring_width: 0pt,
+              text_color: dark-red,
+              border_color: dark-red,
+            )),
+          )
+        }
       }
       #set par(first-line-indent: 0em)
       #align(left)[

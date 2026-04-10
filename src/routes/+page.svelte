@@ -22,6 +22,7 @@
   const authorityPrefixes = ['终末地', '武陵区', '清波寨'] as const;
 
   let isReady = $state(false);
+  let isGenerating = $state(false);
 
   let issuer = $state<(typeof issuers)[number]>(issuers[0]);
   let issuerName = $derived(m[`issuer_${issuer}`]());
@@ -130,6 +131,36 @@
     };
   };
 
+  const generatePDF = async () => {
+    isGenerating = true;
+    await waitForTypst();
+    await typst.addSource(
+      '/main.typ',
+      getTypstDocument({
+        issuer,
+        authority1: authorityPrefix1 + authority1,
+        authority2: authority2 ? authorityPrefix2 + authority2 : '',
+        refNo,
+        docTitle,
+        issueDate: parseDate(issueDate),
+        docContent
+      })
+    );
+    try {
+      const data = await typst.pdf();
+      if (!data) return;
+      const blob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
+      pdf = URL.createObjectURL(blob);
+      compileError = undefined;
+      saveToStorage();
+    } catch (e) {
+      compileError = e instanceof Error ? e.message : String(e);
+      console.error('Error generating PDF:', e);
+    } finally {
+      isGenerating = false;
+    }
+  };
+
   $effect(() => {
     // Debounce input changes to avoid excessive PDF regeneration
     void issuer;
@@ -144,32 +175,7 @@
     void issueDate.day;
     void docContent;
     if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(async () => {
-      await waitForTypst();
-      await typst.addSource(
-        '/main.typ',
-        getTypstDocument({
-          issuer,
-          authority1: authorityPrefix1 + authority1,
-          authority2: authority2 ? authorityPrefix2 + authority2 : '',
-          refNo,
-          docTitle,
-          issueDate: parseDate(issueDate),
-          docContent
-        })
-      );
-      try {
-        const data = await typst.pdf();
-        if (!data) return;
-        const blob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
-        pdf = URL.createObjectURL(blob);
-        compileError = undefined;
-        saveToStorage();
-      } catch (e) {
-        compileError = e instanceof Error ? e.message : String(e);
-        console.error('Error generating PDF:', e);
-      }
-    }, 500);
+    timeout = setTimeout(generatePDF, 500);
   });
 
   onMount(async () => {
@@ -323,7 +329,15 @@
     <Card class="border-border/50 flex flex-col">
       <CardHeader class="flex items-center justify-between">
         <CardTitle class="text-base font-semibold">{m.preview()}</CardTitle>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" size="sm" onclick={generatePDF} disabled={!pdf || isGenerating}>
+            {#if !pdf || isGenerating}
+              <Spinner class="size-4" />
+              {m.generating()}
+            {:else}
+              {m.regenerate()}
+            {/if}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -352,7 +366,7 @@
             <p class="text-destructive text-sm font-medium">{m.compile_error()}</p>
             <p class="text-muted-foreground text-xs">{m.compile_error_desc()}</p>
             <pre
-              class="bg-muted text-destructive/80 overflow-auto rounded-sm p-3 font-mono text-xs">{compileError}</pre>
+              class="bg-muted text-destructive/80 rounded-sm p-3 font-mono text-xs text-wrap">{compileError}</pre>
           </div>
         {:else if pdf}
           <object

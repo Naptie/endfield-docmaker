@@ -1,6 +1,6 @@
 // Credit: Lonyou (https://github.com/Vkango)
 
-#let circular_seal(
+#let circular_stamp(
   // 主要参数
   main_text, // 主文字（上方弧形）
   center_content, // 中心内容（文字、图片等任意 content）

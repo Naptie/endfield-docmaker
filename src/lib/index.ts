@@ -50,12 +50,11 @@ export const getTypstDocument = ({
   urgen-level: none,
   ${authority2 ? `authorities: ("${authority1}", "${authority2}")` : `authority: ("${authority1}")`},
   stamp-icon: image("stamp-${issuer}.png"),
-  stamp-shift: (5mm - ${Math.random() * 30}mm, 10mm - ${Math.random() * 40}mm),
-  stamp-rotation: 25deg - ${Math.random() * 50}deg,
   watermark-icon: image("watermark-${issuer}.png"),
   issuer: "${m[`issuer_${issuer}`]()}",
   title: "${docTitle}",
   issue-date: datetime(year: ${year}, month: ${month}, day: ${day}),
+  seed: ${Date.now()},
 )
 
 ${docContent}
