@@ -239,7 +239,7 @@
               <Button
                 variant="outline"
                 size="sm"
-                class="h-7 text-xs"
+                class="h-7 cursor-pointer text-xs"
                 onclick={() => {
                   authorities = [...authorities, { faction: ISSUERS[0].key, name: '' }];
                 }}
@@ -326,7 +326,7 @@
                 <Button
                   variant="ghost"
                   size="sm"
-                  class="text-muted-foreground hover:text-destructive h-8 w-8 shrink-0 p-0"
+                  class="text-muted-foreground hover:text-destructive h-8 w-8 shrink-0 cursor-pointer p-0"
                   onclick={() => {
                     authorities = authorities.filter((_, idx) => idx !== i);
                   }}
@@ -387,7 +387,13 @@
       <CardHeader class="flex items-center justify-between">
         <CardTitle class="text-base font-semibold">{m.preview()}</CardTitle>
         <div class="flex flex-wrap justify-end gap-2">
-          <Button variant="outline" size="sm" onclick={generatePDF} disabled={!pdf || isGenerating}>
+          <Button
+            variant="outline"
+            class="cursor-pointer"
+            size="sm"
+            onclick={generatePDF}
+            disabled={!pdf || isGenerating}
+          >
             {#if !pdf || isGenerating}
               <Spinner class="size-4" />
               {m.generating()}
@@ -397,6 +403,7 @@
           </Button>
           <Button
             variant="outline"
+            class="cursor-pointer"
             size="sm"
             onclick={() => window.open(pdf, '_blank')}
             disabled={!pdf}
@@ -405,6 +412,7 @@
           </Button>
           <Button
             variant="outline"
+            class="cursor-pointer"
             size="sm"
             onclick={() =>
               triggerDownload(
