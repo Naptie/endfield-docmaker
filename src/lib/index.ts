@@ -1,6 +1,11 @@
 import { m } from '$lib/paraglide/messages';
 import type { ISSUERS } from './constants';
 
+export type Authority = {
+  faction: (typeof ISSUERS)[number]['key'];
+  name: string;
+};
+
 export const pick = <T>(items: T[]): T => items[Math.floor(Math.random() * items.length)];
 
 export const getAssetData = async (url: string): Promise<Uint8Array> => {
@@ -24,25 +29,26 @@ export const triggerDownload = (url: string, name: string) => {
 
 export const getTypstDocument = ({
   issuer,
-  authority1,
-  authority2,
-  authorityPrefix1,
-  authorityPrefix2,
+  authorities,
   docTitle,
   refNo,
   issueDate: { year, month, day },
   docContent
 }: {
   issuer: (typeof ISSUERS)[number]['key'];
-  authority1: string;
-  authority2: string;
-  authorityPrefix1: (typeof ISSUERS)[number]['key'];
-  authorityPrefix2: (typeof ISSUERS)[number]['key'];
+  authorities: Authority[];
   docTitle: string;
   refNo: string;
   issueDate: { year: number; month: number; day: number };
   docContent: string;
-}): string => `
+}): string => {
+  const authEntries = authorities
+    .filter((a) => a.name.trim() !== '')
+    .map(
+      (a) =>
+        `(name: "${m[`prefix_${a.faction}`]()}${a.name}", icon: image("stamp-${a.faction}.png"))`
+    );
+  return `
 #import "official-doc.typ": *
 
 #show: official-doc.with(
@@ -50,8 +56,7 @@ export const getTypstDocument = ({
   conf-level: none,
   conf-period: none,
   urgen-level: none,
-  ${authority2 ? `authorities: ("${authority1}", "${authority2}")` : `authority: ("${authority1}")`},
-  stamp-icons: (${authority2 ? `image("stamp-${authorityPrefix1}.png"), image("stamp-${authorityPrefix2}.png")` : `image("stamp-${authorityPrefix1}.png"),`}),
+  authorities: (${authEntries.join(', ')},),
   watermark-icon: image("watermark-${issuer}.png"),
   issuer: "${m[`issuer_${issuer}`]()}",
   title: "${docTitle}",
@@ -61,3 +66,4 @@ export const getTypstDocument = ({
 
 ${docContent}
 `;
+};

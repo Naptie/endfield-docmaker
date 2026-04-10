@@ -12,24 +12,26 @@
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
   import { Spinner } from '$lib/components/ui/spinner';
   import { Separator } from '$lib/components/ui/separator';
-  import { Badge } from '$lib/components/ui/badge';
-  import { getTypstDocument, pick, triggerDownload } from '$lib';
+  import { getTypstDocument, pick, triggerDownload, type Authority } from '$lib';
   import { onMount } from 'svelte';
   import typst, { loadingState, waitForTypst } from '$lib/typst.svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { ISSUERS } from '$lib/constants';
+  import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
 
   let isReady = $state(false);
   let isGenerating = $state(false);
 
   let issuer = $state<(typeof ISSUERS)[number]['key']>(ISSUERS[0].key);
   let issuerName = $derived(m[`issuer_${issuer}`]());
-  let authorityPrefix1 = $state<typeof issuer>(ISSUERS[0].key);
-  let authorityPrefixName1 = $derived(m[`prefix_${authorityPrefix1}`]());
-  let authorityPrefix2 = $state<typeof issuer>(ISSUERS[0].key);
-  let authorityPrefixName2 = $derived(m[`prefix_${authorityPrefix2}`]());
-  let authority1 = $state('纪律检查委员会');
-  let authority2 = $state('人事管理局');
+  let authorities = $state<Authority[]>([
+    { faction: ISSUERS[0].key, name: '纪律检查委员会' },
+    { faction: ISSUERS[0].key, name: '人事管理局' }
+  ]);
+  const MAX_AUTHORITIES = 9;
+  let dragIndex = $state<number | null>(null);
+  let dragOverIndex = $state<number | null>(null);
+  let inputFocused = $state(false);
   let refNo = $state('1');
   let docTitle = $state('关于终末地相关人员人事管理\n违规问题的调查处理通报');
   let issueDate = $state({ year: '152', month: '1', day: '29' });
@@ -68,7 +70,7 @@
 `);
 
   const STORAGE_KEY = 'endfield-doc';
-  const STORAGE_VERSION = 2;
+  const STORAGE_VERSION = 3;
 
   const saveToStorage = () => {
     try {
@@ -77,10 +79,7 @@
         JSON.stringify({
           version: STORAGE_VERSION,
           issuer,
-          authorityPrefix1,
-          authorityPrefix2,
-          authority1,
-          authority2,
+          authorities,
           refNo,
           docTitle,
           issueDate,
@@ -99,10 +98,8 @@
       const data = JSON.parse(raw);
       if (data.version !== STORAGE_VERSION) return;
       if (data.issuer) issuer = data.issuer;
-      if (data.authorityPrefix1 !== undefined) authorityPrefix1 = data.authorityPrefix1;
-      if (data.authorityPrefix2 !== undefined) authorityPrefix2 = data.authorityPrefix2;
-      if (data.authority1 !== undefined) authority1 = data.authority1;
-      if (data.authority2 !== undefined) authority2 = data.authority2;
+      if (Array.isArray(data.authorities) && data.authorities.length > 0)
+        authorities = data.authorities;
       if (data.refNo !== undefined) refNo = data.refNo;
       if (data.docTitle !== undefined) docTitle = data.docTitle;
       if (data.issueDate?.year !== undefined) issueDate = data.issueDate;
@@ -139,10 +136,7 @@
         '/main.typ',
         getTypstDocument({
           issuer,
-          authority1: authorityPrefixName1 + authority1,
-          authority2: authority2 ? authorityPrefixName2 + authority2 : '',
-          authorityPrefix1,
-          authorityPrefix2,
+          authorities,
           refNo,
           docTitle,
           issueDate: parseDate(issueDate),
@@ -166,10 +160,7 @@
   $effect(() => {
     // Debounce input changes to avoid excessive PDF regeneration
     void issuer;
-    void authorityPrefix1;
-    void authorityPrefix2;
-    void authority1;
-    void authority2;
+    void JSON.stringify(authorities);
     void refNo;
     void docTitle;
     void issueDate.year;
@@ -241,47 +232,111 @@
         </div>
 
         <!-- Authorities -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div class="space-y-2">
-            <Label>{m.authority_1()}</Label>
-            <div class="flex">
-              <Select type="single" bind:value={authorityPrefix1} disabled={!isReady}>
-                <SelectTrigger class="w-auto shrink-0 rounded-r-none border-r-0">
-                  {authorityPrefixName1}
-                </SelectTrigger>
-                <SelectContent>
-                  {#each ISSUERS as issuer (issuer.key)}
-                    <SelectItem value={issuer.key} label={m[`prefix_${issuer.key}`]()} />
-                  {/each}
-                </SelectContent>
-              </Select>
-              <Input bind:value={authority1} disabled={!isReady} class="rounded-l-none" />
-            </div>
-          </div>
-          <div class="space-y-2">
-            <Label class="relative">
-              {m.authority_2()}
-              <Badge
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <Label>{m.authorities()}</Label>
+            {#if authorities.length < MAX_AUTHORITIES}
+              <Button
                 variant="outline"
-                class="text-muted-foreground absolute -top-1 right-0 ml-1.5 text-[10px] font-normal"
+                size="sm"
+                class="h-7 text-xs"
+                onclick={() => {
+                  authorities = [...authorities, { faction: ISSUERS[0].key, name: '' }];
+                }}
+                disabled={!isReady}
               >
-                {m.optional()}
-              </Badge>
-            </Label>
-            <div class="flex">
-              <Select type="single" bind:value={authorityPrefix2} disabled={!isReady}>
-                <SelectTrigger class="w-auto shrink-0 rounded-r-none border-r-0">
-                  {authorityPrefixName2}
-                </SelectTrigger>
-                <SelectContent>
-                  {#each ISSUERS as issuer (issuer)}
-                    <SelectItem value={issuer.key} label={m[`prefix_${issuer.key}`]()} />
-                  {/each}
-                </SelectContent>
-              </Select>
-              <Input bind:value={authority2} disabled={!isReady} class="rounded-l-none" />
-            </div>
+                + {m.add_authority()}
+              </Button>
+            {/if}
           </div>
+          {#each authorities as auth, i (i)}
+            <div
+              class="flex items-center gap-2 rounded-md transition-colors {dragOverIndex === i &&
+              dragIndex !== null &&
+              dragIndex !== i
+                ? 'bg-muted/60'
+                : ''}"
+              draggable={!inputFocused && isReady && authorities.length > 1}
+              ondragstart={(e) => {
+                dragIndex = i;
+                e.dataTransfer!.effectAllowed = 'move';
+              }}
+              ondragover={(e) => {
+                e.preventDefault();
+                e.dataTransfer!.dropEffect = 'move';
+                dragOverIndex = i;
+              }}
+              ondragleave={() => {
+                if (dragOverIndex === i) dragOverIndex = null;
+              }}
+              ondrop={(e) => {
+                e.preventDefault();
+                if (dragIndex !== null && dragIndex !== i) {
+                  const updated = [...authorities];
+                  const [moved] = updated.splice(dragIndex, 1);
+                  updated.splice(i, 0, moved);
+                  authorities = updated;
+                }
+                dragIndex = null;
+                dragOverIndex = null;
+              }}
+              ondragend={() => {
+                dragIndex = null;
+                dragOverIndex = null;
+              }}
+              role="listitem"
+            >
+              {#if authorities.length > 1}
+                <span
+                  class="text-muted-foreground/60 hover:text-muted-foreground flex shrink-0 cursor-grab active:cursor-grabbing"
+                >
+                  <GripVerticalIcon class="size-4" />
+                </span>
+              {/if}
+              <div class="flex min-w-0 flex-1">
+                <Select
+                  type="single"
+                  value={auth.faction}
+                  onValueChange={(v) => {
+                    authorities[i] = { ...auth, faction: v as Authority['faction'] };
+                  }}
+                  disabled={!isReady}
+                >
+                  <SelectTrigger class="w-auto shrink-0 rounded-r-none border-r-0">
+                    {m[`prefix_${auth.faction}`]()}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {#each ISSUERS as iss (iss.key)}
+                      <SelectItem value={iss.key} label={m[`prefix_${iss.key}`]()} />
+                    {/each}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={auth.name}
+                  oninput={(e) => {
+                    authorities[i] = { ...auth, name: e.currentTarget.value };
+                  }}
+                  onfocus={() => (inputFocused = true)}
+                  onblur={() => (inputFocused = false)}
+                  disabled={!isReady}
+                  class="rounded-l-none"
+                />
+              </div>
+              {#if authorities.length > 1}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="text-muted-foreground hover:text-destructive h-8 w-8 shrink-0 p-0"
+                  onclick={() => {
+                    authorities = authorities.filter((_, idx) => idx !== i);
+                  }}
+                  disabled={!isReady}
+                >
+                  ✕
+                </Button>
+              {/if}
+            </div>
+          {/each}
         </div>
 
         <!-- Title -->
