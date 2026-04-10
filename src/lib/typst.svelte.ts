@@ -18,6 +18,9 @@ import fontSimFang from '$lib/assets/fonts/SIMFANG.TTF?url';
 import fontSimHei from '$lib/assets/fonts/SIMHEI.TTF?url';
 import fontSimKai from '$lib/assets/fonts/SIMKAI.TTF?url';
 import fontSTSong from '$lib/assets/fonts/STSONG.TTF?url';
+import fontJBMono from '$lib/assets/fonts/JetBrainsMono-VariableFont_wght.ttf?url';
+import fontNewCMMath from '$lib/assets/fonts/NewCMMath-Regular.otf?url';
+
 import endfieldIndustriesLogo from '$lib/assets/logos/endfield-industries.png';
 
 const logos: { issuer: string; url: string }[] = [
@@ -29,7 +32,9 @@ const fonts: { name: string; url: string }[] = [
   { name: 'SIMFANG.TTF', url: fontSimFang },
   { name: 'SIMHEI.TTF', url: fontSimHei },
   { name: 'SIMKAI.TTF', url: fontSimKai },
-  { name: 'STSONG.TTF', url: fontSTSong }
+  { name: 'STSONG.TTF', url: fontSTSong },
+  { name: 'JetBrainsMono-VariableFont_wght.ttf', url: fontJBMono },
+  { name: 'NewCMMath-Regular.otf', url: fontNewCMMath }
 ];
 
 let isInitialized = false;

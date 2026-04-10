@@ -179,6 +179,7 @@
   show heading: set block(spacing: 0.655em)
 
   show: show-cn-fakebold
+  show raw: set text(font: "JetBrains Mono")
   content
 
   v(7em)
