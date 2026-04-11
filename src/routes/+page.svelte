@@ -305,7 +305,7 @@
                 dragOverIndex = null;
               }}
               role="listitem"
-              transition:slide
+              transition:slide={{ duration: 80 }}
             >
               {#if authorities.length > 1}
                 <span
