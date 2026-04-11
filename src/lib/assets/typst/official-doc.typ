@@ -2,10 +2,11 @@
 
 #import "@preview/cuti:0.3.0": fakebold, show-cn-fakebold
 #import "@preview/numbly:0.1.0": numbly
-#import "tuzhang.typ": circular_seal
+#import "@preview/suiji:0.5.1": gen-rng-f, random-f
+#import "tuzhang.typ": circular_stamp
 
 #let pure-v(length) = block(v(length), width: 100%, outset: 0pt, inset: 0pt, below: 0pt, spacing: 0pt)
-#let pure-red = rgb(210, 0, 0)
+#let dark-red = rgb(210, 0, 0)
 
 #let noindent() = h(-2em)
 
@@ -22,25 +23,40 @@
   }
 }
 
+#let arrange(amount, radius, (width, height)) = {
+  let cols = if amount == 3 or amount > 4 { 3 } else { 2 }
+  let gap = radius * 2
+  let init-height = if amount > 6 { -height / 2 } else { -calc.abs(height / 2 - radius) }
+
+  range(amount).map(i => {
+    let col = calc.rem(i, cols)
+    let row = calc.quo(i, cols)
+
+    let count = calc.min(amount - row * cols, cols)
+
+    (
+      dx: width / 2 - radius * (cols + count - 1 - 2 * col),
+      dy: init-height + row * gap,
+    )
+  })
+}
+
 #let official-doc(
   copy-no: 1,
   ref-no: 1,
   conf-level: "机密",
   conf-period: "1年",
   urgen-level: "平件",
-  authority: none,
-  authorities: none,
-  stamp-icon: none,
-  stamp-shift: (-12mm, -18mm),
-  stamp-rotation: -10deg,
+  authorities: (),
   watermark-icon: none,
   issuer: "✕✕✕",
   title: "✕✕✕✕✕关于✕✕✕✕✕✕的通知",
   issue-date: datetime.today(),
+  seed: 0,
   content,
 ) = {
-  assert(authority != none or authorities != none, message: "Either 'authority' or 'authorities' must be specified")
-  let resolved-authorities = if authorities != none { authorities } else { (authority,) }
+  assert(authorities.len() > 0, message: "'authorities' must contain at least one entry")
+  let authority-names = authorities.map(a => a.name)
   set page(binding: left, margin: (inside: 28mm, outside: 26mm, top: 37mm, bottom: 35mm))
 
   set page(numbering: (..x) => {
@@ -81,11 +97,11 @@
   }
 
   align(center, {
-    set text(font: "FZXiaoBiaoSong-B05", size: 36pt, fill: pure-red)
+    set text(font: "FZXiaoBiaoSong-B05", size: 36pt, fill: dark-red)
     let target-width = 156mm // 210mm (A4) - 28mm (inside) - 26mm (outside)
     context {
-      if authority != none or resolved-authorities.len() == 1 {
-        let title-text = resolved-authorities.first() + "文件"
+      if authority-names.len() == 1 {
+        let title-text = authority-names.first() + "文件"
         let chars = title-text.clusters()
         let natural = chars.map(c => measure(c).width).sum()
         fit-to-width(target-width, natural, title-text, char-count: chars.len())
@@ -94,7 +110,7 @@
         let gutter = measure(h(0.1em)).width
         let auth-target = target-width - wenjian-width - gutter
 
-        let fitted = resolved-authorities.map(a => {
+        let fitted = authority-names.map(a => {
           let chars = a.clusters()
           let natural = chars.map(c => measure(c).width).sum()
           fit-to-width(auth-target, natural, a, char-count: chars.len())
@@ -106,7 +122,7 @@
           column-gutter: 0.1em,
           row-gutter: 0.1em,
           fitted.first(),
-          grid.cell(rowspan: resolved-authorities.len(), "文件"),
+          grid.cell(rowspan: authority-names.len(), "文件"),
           ..fitted.slice(1),
         )
       }
@@ -120,7 +136,7 @@
     block(text(size: 16pt, issuer + "〔" + str(issue-date.year()) + "〕" + str(ref-no) + "号")),
   )
 
-  line(length: 100%, stroke: 3pt + pure-red)
+  line(length: 100%, stroke: 3pt + dark-red)
 
   pure-v(20mm)
 
@@ -186,28 +202,43 @@
 
   align(right)[
     #box[
-      #if stamp-icon != none {
-        place(
-          center + horizon,
-          dx: stamp-shift.first(),
-          dy: stamp-shift.last(),
-          rotate(stamp-rotation, circular_seal(
-            if authority != none { authority } else { resolved-authorities.first() },
-            stamp-icon,
-            inner_ring_width: 0pt,
-            text_color: pure-red,
-            border_color: pure-red,
-          )),
-        )
-      }
-      #set par(first-line-indent: 0em)
-      #align(left)[
-        #for a in resolved-authorities {
-          a
-          linebreak()
-        }
-        #issue-date.display("[year padding:none]年[month padding:none]月[day padding:none]日")
+      #let text-content = [
+        #set par(first-line-indent: 0em)
+        #align(left)[
+          #for a in authority-names {
+            a
+            linebreak()
+          }
+          #issue-date.display("[year padding:none]年[month padding:none]月[day padding:none]日")
+        ]
       ]
+
+      #context {
+        if authorities.len() > 0 {
+          let positions = arrange(authorities.len(), 72pt, measure(text-content))
+          let rng = gen-rng-f(seed)
+          let params = ()
+          for i in range(authorities.len()) {
+            let authority = authorities.at(i)
+            let (dx, dy) = positions.at(i)
+            (rng, params) = random-f(rng, size: 3)
+            place(
+              center + horizon,
+              dx: dx + (3mm - params.at(0) * 6mm),
+              dy: dy - params.at(1) * 5mm,
+              rotate(8deg - params.at(2) * 16deg, circular_stamp(
+                authority.name,
+                authority.icon,
+                inner_ring_width: 0pt,
+                text_color: dark-red,
+                border_color: dark-red,
+              )),
+            )
+          }
+        }
+
+        text-content
+      }
     ]
   ]
 }

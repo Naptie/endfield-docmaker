@@ -1,6 +1,6 @@
 // Credit: Lonyou (https://github.com/Vkango)
 
-#let circular_seal(
+#let circular_stamp(
   // 主要参数
   main_text, // 主文字（上方弧形）
   center_content, // 中心内容（文字、图片等任意 content）
@@ -124,7 +124,7 @@
       }
 
       // Center content (text, image, or any content)
-      let resolved-width = if center_content_width == auto { outer_radius * 1.15 } else { center_content_width }
+      let resolved-width = if center_content_width == auto { outer_radius } else { center_content_width }
       place(center + horizon, box(width: resolved-width, center_content))
     })
   })
