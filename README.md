@@ -99,6 +99,7 @@ pnpm build
 
 - [ParaN3xus](https://github.com/ParaN3xus) — 红头公文 Typst 模板 (`official-doc.typ`)
 - [Lonyou](https://github.com/Vkango) — 圆形公章 Typst 模板 (`tuzhang.typ`)
+- [Cuilb](https://www.xiaohongshu.com/user/profile/5ed7a1e1000000000101cef8) — 罗德岛、宏科院、联盟工团、环塔商会矢量复刻 Logo
 - [typst.ts](https://github.com/Myriad-Dreamin/typst.ts) — [Typst](https://typst.app) WebAssembly 编译器
 - [shadcn-svelte](https://www.shadcn-svelte.com) — UI 组件库
 

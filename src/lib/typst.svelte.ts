@@ -8,7 +8,7 @@ import type {
   PackageSpec
 } from '@myriaddreamin/typst.ts/dist/esm/internal.types.mjs';
 import { getFontBlobUrl } from '$lib';
-import { tintImage } from '$lib/tint';
+import { tintImage, tintSvg, recenterSvg } from '$lib/tint';
 import { dev } from '$app/environment';
 
 import docTempl from '$lib/assets/typst/official-doc.typ?raw';
@@ -164,15 +164,25 @@ export const initializeTypst = async () => {
 
       // Tint logos and register as shadow files
       await Promise.all(
-        ISSUERS.map(async ({ key, url }) => {
-          const [redTinted, blackTinted] = await Promise.all([
-            tintImage(url, [210, 0, 0], 1, true),
-            tintImage(url, [0, 0, 0], 0.25)
-          ]);
-          await Promise.all([
-            typst.mapShadow(`/stamp-${key}.png`, redTinted),
-            typst.mapShadow(`/watermark-${key}.png`, blackTinted)
-          ]);
+        ISSUERS.map(async (issuer) => {
+          if (issuer.type === 'svg') {
+            const recentered = await recenterSvg(issuer.raw);
+            const redTinted = tintSvg(recentered, [210, 0, 0]);
+            const blackTinted = tintSvg(issuer.raw, [0, 0, 0], 0.25);
+            await Promise.all([
+              typst.mapShadow(`/stamp-${issuer.key}.svg`, redTinted),
+              typst.mapShadow(`/watermark-${issuer.key}.svg`, blackTinted)
+            ]);
+          } else {
+            const [redTinted, blackTinted] = await Promise.all([
+              tintImage(issuer.url, [210, 0, 0], 1, true),
+              tintImage(issuer.url, [0, 0, 0], 0.25)
+            ]);
+            await Promise.all([
+              typst.mapShadow(`/stamp-${issuer.key}.png`, redTinted),
+              typst.mapShadow(`/watermark-${issuer.key}.png`, blackTinted)
+            ]);
+          }
         })
       );
 

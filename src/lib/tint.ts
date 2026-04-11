@@ -70,6 +70,90 @@ const recenterImage = (img: HTMLImageElement): OffscreenCanvas => {
   return canvas;
 };
 
+/**
+ * Recenter an SVG so its visual centroid sits at the geometric center,
+ * and produce a square viewBox for uniform sizing.
+ */
+export const recenterSvg = async (raw: string): Promise<string> => {
+  const vbMatch = raw.match(/viewBox="([^"]+)"/);
+  if (!vbMatch) return raw;
+  const [vbMinX, vbMinY, vbWidth, vbHeight] = vbMatch[1].split(/\s+/).map(Number);
+
+  // Rasterize at a reasonable resolution for centroid computation
+  const targetSize = 256;
+  const scale = targetSize / Math.max(vbWidth, vbHeight);
+  const renderW = Math.round(vbWidth * scale);
+  const renderH = Math.round(vbHeight * scale);
+  const renderSvg = raw.replace('<svg', `<svg width="${renderW}" height="${renderH}"`);
+
+  const blob = new Blob([renderSvg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await loadImage(url);
+    const canvas = new OffscreenCanvas(img.naturalWidth, img.naturalHeight);
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    let sumX = 0,
+      sumY = 0,
+      totalWeight = 0;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const offset = (canvas.width * y + x) * 4;
+        const weight = getEffectiveOpacity(
+          data[offset],
+          data[offset + 1],
+          data[offset + 2],
+          data[offset + 3]
+        );
+        if (weight > 0) {
+          sumX += x * weight;
+          sumY += y * weight;
+          totalWeight += weight;
+        }
+      }
+    }
+
+    if (totalWeight === 0) return raw;
+
+    // Convert centroid to viewBox coordinates
+    const centroidVbX = vbMinX + (sumX / totalWeight / canvas.width) * vbWidth;
+    const centroidVbY = vbMinY + (sumY / totalWeight / canvas.height) * vbHeight;
+
+    // Square viewBox centered on centroid, large enough to contain all content
+    const halfSide = Math.max(
+      centroidVbX - vbMinX,
+      vbMinX + vbWidth - centroidVbX,
+      centroidVbY - vbMinY,
+      vbMinY + vbHeight - centroidVbY
+    );
+
+    const newViewBox = `${centroidVbX - halfSide} ${centroidVbY - halfSide} ${halfSide * 2} ${halfSide * 2}`;
+    return raw.replace(vbMatch[0], `viewBox="${newViewBox}"`);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+};
+
+export const tintSvg = (
+  raw: string,
+  color: [number, number, number],
+  alpha: number = 1
+): Uint8Array => {
+  const hex = '#' + color.map((c) => c.toString(16).padStart(2, '0')).join('');
+  // Use CSS !important to override any embedded fill styles (e.g. .cls-1 { fill: #fff })
+  const fillCss = `* { fill: ${hex} !important; }`;
+  let tinted = raw.includes('</style>')
+    ? raw.replace('</style>', `${fillCss}</style>`)
+    : raw.replace('<svg', `<svg style="fill: ${hex}"`);
+  // Set opacity as an SVG attribute on the root (not CSS *) to avoid compounding on nested elements
+  if (alpha < 1) {
+    tinted = tinted.replace('<svg', `<svg opacity="${alpha}"`);
+  }
+  return new TextEncoder().encode(tinted);
+};
+
 export const tintImage = async (
   src: string,
   color: [number, number, number],

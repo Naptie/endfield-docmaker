@@ -1,8 +1,10 @@
 import { m } from '$lib/paraglide/messages';
-import type { ISSUERS } from './constants';
+import { ISSUERS } from './constants';
+
+export type IssuerKey = (typeof ISSUERS)[number]['key'];
 
 export type Authority = {
-  faction: (typeof ISSUERS)[number]['key'];
+  faction: IssuerKey;
   name: string;
 };
 
@@ -35,19 +37,22 @@ export const getTypstDocument = ({
   issueDate: { year, month, day },
   docContent
 }: {
-  issuer: (typeof ISSUERS)[number]['key'];
+  issuer: IssuerKey;
   authorities: Authority[];
   docTitle: string;
   refNo: string;
   issueDate: { year: number; month: number; day: number };
   docContent: string;
 }): string => {
+  const extOf = (key: string) =>
+    ISSUERS.find((i) => i.key === key)?.type === 'svg' ? 'svg' : 'png';
   const authEntries = authorities
     .filter((a) => a.name.trim() !== '')
     .map(
       (a) =>
-        `(name: "${m[`prefix_${a.faction}`]()}${a.name}", icon: image("stamp-${a.faction}.png"))`
+        `(name: "${m[`prefix_${a.faction}`]()}${a.name}", icon: image("stamp-${a.faction}.${extOf(a.faction)}", width: 100%))`
     );
+  const watermarkExt = extOf(issuer);
   return `
 #import "official-doc.typ": *
 
@@ -57,7 +62,7 @@ export const getTypstDocument = ({
   conf-period: none,
   urgen-level: none,
   authorities: (${authEntries.join(', ')},),
-  watermark-icon: image("watermark-${issuer}.png"),
+  watermark-icon: image("watermark-${issuer}.${watermarkExt}", width: 100%),
   issuer: "${m[`issuer_${issuer}`]()}",
   title: "${docTitle}",
   issue-date: datetime(year: ${year}, month: ${month}, day: ${day}),
