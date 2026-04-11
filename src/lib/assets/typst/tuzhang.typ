@@ -124,7 +124,7 @@
       }
 
       // Center content (text, image, or any content)
-      let resolved-width = if center_content_width == auto { outer_radius * 1.15 } else { center_content_width }
+      let resolved-width = if center_content_width == auto { outer_radius } else { center_content_width }
       place(center + horizon, box(width: resolved-width, center_content))
     })
   })
