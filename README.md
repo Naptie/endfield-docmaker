@@ -118,4 +118,8 @@ pnpm build
 
 ## 星标历史
 
-[![Stargazers over time](https://starchart.cc/Naptie/endfield-docmaker.svg?variant=adaptive)](https://starchart.cc/Naptie/endfield-docmaker)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/star-history/star-history-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset=".github/assets/star-history/star-history-light.svg">
+  <img alt="星标历史" src=".github/assets/star-history/star-history.png">
+</picture>
