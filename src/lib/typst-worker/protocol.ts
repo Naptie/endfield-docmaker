@@ -42,11 +42,7 @@ export interface PdfMessage {
 }
 
 export type WorkerRequest =
-  | InitMessage
-  | AddSourceMessage
-  | MapShadowMessage
-  | UnmapShadowMessage
-  | PdfMessage;
+  InitMessage | AddSourceMessage | MapShadowMessage | UnmapShadowMessage | PdfMessage;
 
 // ── Worker → Main ──────────────────────────────────────────────────────
 
