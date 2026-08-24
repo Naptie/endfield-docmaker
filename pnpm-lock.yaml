@@ -18,14 +18,14 @@ importers:
         specifier: ^1.23.0
         version: 1.23.0(svelte@5.56.4(@typescript-eslint/types@8.62.1))
       '@myriaddreamin/typst-ts-renderer':
-        specifier: 0.7.0-rc2
-        version: 0.7.0-rc2
+        specifier: 0.8.0-rc3
+        version: 0.8.0-rc3
       '@myriaddreamin/typst-ts-web-compiler':
-        specifier: 0.7.0-rc2
-        version: 0.7.0-rc2
+        specifier: 0.8.0-rc3
+        version: 0.8.0-rc3
       '@myriaddreamin/typst.ts':
-        specifier: 0.7.0-rc2
-        version: 0.7.0-rc2(@myriaddreamin/typst-ts-renderer@0.7.0-rc2)(@myriaddreamin/typst-ts-web-compiler@0.7.0-rc2)
+        specifier: 0.8.0-rc3
+        version: 0.8.0-rc3(@myriaddreamin/typst-ts-renderer@0.8.0-rc3)(@myriaddreamin/typst-ts-web-compiler@0.8.0-rc3)
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(@sveltejs/kit@2.69.0(@sveltejs/vite-plugin-svelte@7.1.2(svelte@5.56.4(@typescript-eslint/types@8.62.1))(vite@8.1.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)))(svelte@5.56.4(@typescript-eslint/types@8.62.1))(typescript@6.0.3)(vite@8.1.2(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4)))(svelte@5.56.4(@typescript-eslint/types@8.62.1))
@@ -448,17 +448,17 @@ packages:
     peerDependencies:
       svelte: ^5
 
-  '@myriaddreamin/typst-ts-renderer@0.7.0-rc2':
-    resolution: {integrity: sha512-god1tcb2YJDkQfA8gLGcAmykVGBpNKorqqDkXVy3InC18KRbsverJhlrHoONurNIU9JuIHoWjJ2D1ntpjPgzbA==}
+  '@myriaddreamin/typst-ts-renderer@0.8.0-rc3':
+    resolution: {integrity: sha512-z4e5AXSnZcY00jyK3Jp/OLO1i3bbkJmEzC946KsFnIsd7PEjjttLOIrv4n+AEClQcd7trkU6d+RprioiTIsI6A==}
 
-  '@myriaddreamin/typst-ts-web-compiler@0.7.0-rc2':
-    resolution: {integrity: sha512-WFO/ecKUfeclld5uDxyjgpnIafKpp2LrS6T1vY+CHaSxCm099AneAQIYFg+OtX+NbFpJsLGCBFSw/qppJJmBAw==}
+  '@myriaddreamin/typst-ts-web-compiler@0.8.0-rc3':
+    resolution: {integrity: sha512-akc8TlhBzldlU1DtbDvR/6ufzgJmQrZMqfYY2fCFbH7y/+h3YdmnyF+twtVqwv+g6YuFXm/Oc1wwa6cYQX4/aw==}
 
-  '@myriaddreamin/typst.ts@0.7.0-rc2':
-    resolution: {integrity: sha512-VM8JqsRcL3AEJ5cuPBn/YvnGTXK/BRPlxdGB2bR48Of/8OIGaPiunv2QfZBIMBBrtbTygUOtAY9BZvkS1AFqgA==}
+  '@myriaddreamin/typst.ts@0.8.0-rc3':
+    resolution: {integrity: sha512-Z5SzwBRNV3a8Zz6BCdUBnAKRQj2khNM90dhwFpGkefIYiFJ5AUj/F02uoyDZmY2TvziDKEsJn0800BeF7J8mAw==}
     peerDependencies:
-      '@myriaddreamin/typst-ts-renderer': ^0.7.0-rc2
-      '@myriaddreamin/typst-ts-web-compiler': ^0.7.0-rc2
+      '@myriaddreamin/typst-ts-renderer': ^0.8.0-rc3
+      '@myriaddreamin/typst-ts-web-compiler': ^0.8.0-rc3
     peerDependenciesMeta:
       '@myriaddreamin/typst-ts-renderer':
         optional: true
@@ -2089,16 +2089,16 @@ snapshots:
     dependencies:
       svelte: 5.56.4(@typescript-eslint/types@8.62.1)
 
-  '@myriaddreamin/typst-ts-renderer@0.7.0-rc2': {}
+  '@myriaddreamin/typst-ts-renderer@0.8.0-rc3': {}
 
-  '@myriaddreamin/typst-ts-web-compiler@0.7.0-rc2': {}
+  '@myriaddreamin/typst-ts-web-compiler@0.8.0-rc3': {}
 
-  '@myriaddreamin/typst.ts@0.7.0-rc2(@myriaddreamin/typst-ts-renderer@0.7.0-rc2)(@myriaddreamin/typst-ts-web-compiler@0.7.0-rc2)':
+  '@myriaddreamin/typst.ts@0.8.0-rc3(@myriaddreamin/typst-ts-renderer@0.8.0-rc3)(@myriaddreamin/typst-ts-web-compiler@0.8.0-rc3)':
     dependencies:
       idb: 7.1.1
     optionalDependencies:
-      '@myriaddreamin/typst-ts-renderer': 0.7.0-rc2
-      '@myriaddreamin/typst-ts-web-compiler': 0.7.0-rc2
+      '@myriaddreamin/typst-ts-renderer': 0.8.0-rc3
+      '@myriaddreamin/typst-ts-web-compiler': 0.8.0-rc3
 
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:

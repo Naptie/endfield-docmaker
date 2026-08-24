@@ -54,9 +54,9 @@
     "@fontsource-variable/noto-sans-sc": "^5.2.10",
     "@fontsource-variable/sora": "^5.2.8",
     "@lucide/svelte": "^1.23.0",
-    "@myriaddreamin/typst-ts-renderer": "0.7.0-rc2",
-    "@myriaddreamin/typst-ts-web-compiler": "0.7.0-rc2",
-    "@myriaddreamin/typst.ts": "0.7.0-rc2",
+    "@myriaddreamin/typst-ts-renderer": "0.8.0-rc3",
+    "@myriaddreamin/typst-ts-web-compiler": "0.8.0-rc3",
+    "@myriaddreamin/typst.ts": "0.8.0-rc3",
     "@vercel/analytics": "^2.0.1",
     "fflate": "^0.8.3",
     "mode-watcher": "^1.1.0"
