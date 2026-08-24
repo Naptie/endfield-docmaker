@@ -8,7 +8,7 @@
   import { Spinner } from '$lib/components/ui/spinner';
   import { Separator } from '$lib/components/ui/separator';
   import * as Tabs from '$lib/components/ui/tabs';
-  import { pick, triggerDownload } from '$lib/utils';
+  import { pick /*triggerDownload*/ } from '$lib/utils';
   import { onMount } from 'svelte';
   import typst, {
     loadingState,
@@ -23,7 +23,7 @@
 
   let isReady = $state(false);
   let isGenerating = $state(false);
-  let canDownload = $state(false);
+  // let canDownload = $state(false);
   let canShare = $state(false);
 
   // Template selection
@@ -145,10 +145,10 @@
     }
   };
 
-  const handleDownload = () => {
-    if (!pdf) return;
-    triggerDownload(pdf, getFileName());
-  };
+  // const handleDownload = () => {
+  //   if (!pdf) return;
+  //   triggerDownload(pdf, getFileName());
+  // };
 
   /** Schedule a PDF regeneration. Instant for non-text changes, debounced for text. */
   function scheduleGenerate(debounce: boolean) {
@@ -171,9 +171,9 @@
 
   onMount(async () => {
     loadFromStorage();
-    if (typeof document !== 'undefined') {
-      canDownload = 'download' in document.createElement('a');
-    }
+    // if (typeof document !== 'undefined') {
+    //   canDownload = 'download' in document.createElement('a');
+    // }
     await waitForTypst();
   });
 </script>
@@ -273,7 +273,7 @@
           >
             {m.open_in_new_tab()}
           </Button>
-          {#if canDownload}
+          <!-- {#if canDownload}
             <Button
               variant="outline"
               class="cursor-pointer"
@@ -283,7 +283,7 @@
             >
               {m.download()}
             </Button>
-          {/if}
+          {/if} -->
           {#if canShare}
             <Button
               variant="outline"
