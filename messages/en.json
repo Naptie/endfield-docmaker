@@ -16,6 +16,7 @@
   "invalid_date": "Invalid date",
   "issue_date": "Issue Date (Talosian Calendar)",
   "issuer": "Document Issuer",
+  "issuer_code": "Issuer Code",
   "issuer_endfield_industries": "Endfield Industries",
   "issuer_has": "Hongshan Academy of Sciences",
   "issuer_rhodes_island": "Rhodes Island",
@@ -26,6 +27,9 @@
   "kv_value_placeholder": "Value",
   "language": "Language",
   "loading_fonts": "Loading fonts...",
+  "loading_fonts_count": "Downloading {count} font files...",
+  "loading_fonts_named": "Downloading fonts: {files}...",
+  "loading_package": "Downloading package: {name}...",
   "loading_templates": "Loading templates...",
   "loading_wasm": "Loading Typst compiler...",
   "locale_en": "English",
@@ -73,7 +77,8 @@
   "testpaper_par_justify": "Justify Paragraphs",
   "testpaper_show_answer": "Show Answers",
   "testpaper_show_score_box": "Show Score Box",
-  "testpaper_show_secret": "Show Secret Mark",
+  "testpaper_secret": "Security Level",
+  "testpaper_secret_placeholder": "Top Secret",
   "testpaper_subject": "Subject",
   "testpaper_subject_placeholder": "Mathematics",
   "testpaper_title": "Paper Title",
@@ -81,4 +86,4 @@
   "testpaper_year": "Year (Talosian Calendar)",
   "toggle_theme": "Toggle theme",
   "view_on_github": "View on GitHub"
-}
+  }

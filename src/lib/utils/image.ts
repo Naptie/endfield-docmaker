@@ -121,12 +121,6 @@ const computeCentroid = (
   const baseScale = rMax > 0 ? maxSafeRadius / rMax : 1;
   const scale = Math.max(0.86, baseScale * scaleMultiplier);
 
-  console.log(
-    `Centroid: (${cx.toFixed(1)}, ${cy.toFixed(1)}) | ` +
-      `Max Radius: ${rMax}px | Outer Ink Ratio: ${(outerWeightRatio * 100).toFixed(1)}% | ` +
-      `Scale Multiplier: ${scaleMultiplier.toFixed(2)}`
-  );
-
   return { x: cx, y: cy, scale, totalWeight };
 };
 

@@ -162,8 +162,8 @@
 
       <Tabs.Root bind:value={activeTab}>
         <Tabs.List variant="line">
-          <Tabs.Trigger value="fonts">{m.settings_fonts()}</Tabs.Trigger>
-          <Tabs.Trigger value="about">{m.settings_about()}</Tabs.Trigger>
+          <Tabs.Trigger value="fonts" class="cursor-pointer">{m.settings_fonts()}</Tabs.Trigger>
+          <Tabs.Trigger value="about" class="cursor-pointer">{m.settings_about()}</Tabs.Trigger>
         </Tabs.List>
       </Tabs.Root>
 

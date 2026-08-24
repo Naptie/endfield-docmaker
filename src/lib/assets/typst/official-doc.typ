@@ -51,6 +51,7 @@
   authorities: (),
   watermark-icon: none,
   issuer: "✕✕✕",
+  issuer-code: none,
   title: "✕✕✕✕✕关于✕✕✕✕✕✕的通知",
   issue-date: datetime.today(),
   seed: 0,
@@ -132,9 +133,10 @@
 
   pure-v(20mm)
 
+  let ref-prefix = if issuer-code != none { issuer-code } else { issuer }
   align(
     center,
-    block(text(size: 16pt, issuer + "〔" + str(issue-date.year()) + "〕" + str(ref-no) + "号")),
+    block(text(size: 16pt, ref-prefix + "〔" + str(issue-date.year()) + "〕" + str(ref-no) + "号")),
   )
 
   line(length: 100%, stroke: 3pt + header-red)

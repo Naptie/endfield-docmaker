@@ -5,6 +5,7 @@ import { m } from '$lib/paraglide/messages';
 
 export interface OfficialDocValues {
   issuer: IssuerKey;
+  issuerCode: string;
   authorities: Authority[];
   refNo: string;
   docTitle: string;
@@ -27,7 +28,7 @@ export const officialDocTemplate: TemplateDefinition = {
   id: 'official-doc',
   name: () => m.template_official_doc(),
   gridCols: 3,
-  storageVersion: 3,
+  storageVersion: 4,
   fields: [
     {
       type: 'select',
@@ -55,7 +56,13 @@ export const officialDocTemplate: TemplateDefinition = {
       type: 'date',
       key: 'issueDate',
       label: () => m.issue_date(),
-      colspan: 2
+      colspan: 1
+    },
+    {
+      type: 'text',
+      key: 'issuerCode',
+      label: () => m.issuer_code(),
+      colspan: 1
     },
     {
       type: 'text',
@@ -79,6 +86,7 @@ export const officialDocTemplate: TemplateDefinition = {
   ],
   defaults: () => ({
     issuer: ISSUERS[0].key as string,
+    issuerCode: '终纪委联发',
     authorities: [
       { faction: ISSUERS[0].key, name: '纪律检查委员会' },
       { faction: ISSUERS[0].key, name: '人事管理局' }
@@ -144,6 +152,7 @@ export const officialDocTemplate: TemplateDefinition = {
   authorities: (${authEntries.join(', ')},),
   watermark-icon: image("watermark-${v.issuer}.${watermarkExt}", width: ${getLogoScales()[v.issuer] ?? 1} * 100%),
   issuer: "${issuerName}",
+  issuer-code: "${v.issuerCode}",
   title: "${v.docTitle}",
   issue-date: datetime(year: ${year}, month: ${month}, day: ${day}),
   seed: ${Date.now()},
@@ -154,7 +163,7 @@ ${v.docContent}
   },
   getFileName: (values: Record<string, unknown>) => {
     const v = values as unknown as OfficialDocValues;
-    const issuerName = m[`issuer_${v.issuer as IssuerKey}`]();
-    return `${issuerName}〔${v.issueDate.year}〕${v.refNo}号 ${v.docTitle.replaceAll('\n', '')}.pdf`;
+    const refPrefix = v.issuerCode || m[`issuer_${v.issuer as IssuerKey}`]();
+    return `${refPrefix}〔${v.issueDate.year}〕${v.refNo}号 ${v.docTitle.replaceAll('\n', '')}.pdf`;
   }
 };

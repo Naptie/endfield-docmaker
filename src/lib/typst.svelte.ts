@@ -1,5 +1,10 @@
-import docTempl from '$lib/assets/typst/official-doc.typ?raw';
-import tuzhang from '$lib/assets/typst/tuzhang.typ?raw';
+/**
+ * Main-thread client that communicates with the Typst Web Worker.
+ *
+ * Provides the same public API surface as the previous direct typst.ts
+ * integration but all heavy operations run off the main thread.
+ */
+
 import fontXiaoBiaoSong from '$lib/assets/fonts/FZXIAOBIAOSONG-B05.TTF?url';
 import fontSimFang from '$lib/assets/fonts/SIMFANG.TTF?url';
 import fontSimHei from '$lib/assets/fonts/SIMHEI.TTF?url';
@@ -11,21 +16,13 @@ import fontSTIXTwoMath from '$lib/assets/fonts/STIXTwoMath-Regular.otf?url';
 import fontTeXGyreTermes from '$lib/assets/fonts/texgyretermes-math.otf?url';
 import fontJBMono from '$lib/assets/fonts/JetBrainsMono-VariableFont_wght.ttf?url';
 
-import rendererWasmUrl from '@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url';
-import compilerWasmUrl from '@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm?url';
-import { FetchPackageRegistry, MemoryAccessModel, $typst as typst } from '@myriaddreamin/typst.ts';
-import { TypstSnippet } from '@myriaddreamin/typst.ts/dist/esm/contrib/snippet.mjs';
-import type { WritableAccessModel } from '@myriaddreamin/typst.ts/dist/esm/fs/index.mjs';
-import type {
-  PackageResolveContext,
-  PackageSpec
-} from '@myriaddreamin/typst.ts/dist/esm/internal.types.mjs';
 import { tintImage, tintSvg, recenterSvg } from '$lib/utils/image';
 import { dev } from '$app/environment';
 import { base } from '$app/paths';
 import { ISSUERS, setLogoScales } from './constants';
-import { gzipSync } from 'fflate';
-import { loadFontsWithCache } from '$lib/stores/fonts';
+import { loadFontsWithCache, getAllFonts } from '$lib/stores/fonts';
+
+import type { WorkerResponse, LoadingStatus } from '$lib/typst-worker/protocol';
 
 export const DEFAULT_FONTS: { name: string; url: string }[] = [
   { name: 'FZXIAOBIAOSONG-B05.TTF', url: fontXiaoBiaoSong },
@@ -40,211 +37,238 @@ export const DEFAULT_FONTS: { name: string; url: string }[] = [
   { name: 'JetBrainsMono-VariableFont_wght.ttf', url: fontJBMono }
 ];
 
-let isInitialized = false;
-let initializationPromise: Promise<void> | null = null;
-export const loadingState: { status: 'loading_fonts' | 'loading_wasm' | 'loading_templates' | '' } =
-  $state({ status: '' });
+// ── Reactive state ─────────────────────────────────────────────────────
 
-const logoScales: Record<string, number> = {};
-// Expose logo scales to template definitions
-const syncLogoScales = () => setLogoScales({ ...logoScales });
+export const loadingState: { status: LoadingStatus } = $state({ status: '' });
+export const packageLoadingState: { name: string | null; downloaded: number } = $state({
+  name: null,
+  downloaded: 0
+});
 
-const isGzipData = (data: Uint8Array): boolean =>
-  data.length >= 2 && data[0] === 0x1f && data[1] === 0x8b;
-const isTarData = (data: Uint8Array): boolean =>
-  data.length >= 262 &&
-  data[257] === 0x75 && // u
-  data[258] === 0x73 && // s
-  data[259] === 0x74 && // t
-  data[260] === 0x61 && // a
-  data[261] === 0x72; // r
+/** Download progress for fonts or any batch download (0 → 1, plus active file names). */
+export const downloadProgress: { progress: number; activeFiles: string[] } = $state({
+  progress: 0,
+  activeFiles: []
+});
 
-class InjectedRegistry extends FetchPackageRegistry {
-  constructor(private am_: WritableAccessModel) {
-    super(am_);
-  }
+// ── Worker management ──────────────────────────────────────────────────
 
-  pullPackageData(path: PackageSpec): Uint8Array | undefined {
-    const request = new XMLHttpRequest();
-    request.overrideMimeType('text/plain; charset=x-user-defined');
-    request.open('GET', this.resolvePath(path), false);
-    request.send(null);
-
-    if (
-      request.status === 200 &&
-      (request.response instanceof String || typeof request.response === 'string')
-    ) {
-      return Uint8Array.from(request.response, (char) => char.charCodeAt(0));
-    }
-
-    return undefined;
-  }
-
-  resolvePath(path: PackageSpec): string {
-    switch (path.namespace) {
-      case 'preview':
-        return `https://packages.typst.org/preview/${path.name}-${path.version}.tar.gz`;
-      case 'this':
-        return `${base}/typst/${path.name}-${path.version}.tar.gz`;
-      default:
-        return super.resolvePath(path);
-    }
-  }
-
-  resolve(spec: PackageSpec, context: PackageResolveContext): string | undefined {
-    if (spec.namespace !== 'preview' && spec.namespace !== 'this') {
-      return undefined;
-    }
-
-    // Check cache
-    const path = this.resolvePath(spec);
-    if (this.cache.has(path)) {
-      return this.cache.get(path)!();
-    }
-
-    // Fetch data
-    const data = this.pullPackageData(spec);
-    if (!data) {
-      return undefined;
-    }
-    const normalizedData = !isGzipData(data) && isTarData(data) ? gzipSync(data) : data;
-    if (!isGzipData(normalizedData)) {
-      const firstBytes = Array.from(data.subarray(0, 8))
-        .map((byte) => byte.toString(16).padStart(2, '0'))
-        .join(' ');
-      throw new Error(
-        `Package ${spec.namespace}/${spec.name}:${spec.version} is not gzip data (first bytes: ${firstBytes})`
-      );
-    }
-
-    // Extract package bundle to the underlying access model `this.am`
-    const previewDir = `/@memory/fetch/packages/${spec.namespace}/${spec.name}/${spec.version}`;
-    const entries: [string, Uint8Array, Date][] = [];
-    context.untar(normalizedData, (path: string, data: Uint8Array, mtime: number) => {
-      entries.push([previewDir + '/' + path, data, new Date(mtime)]);
-    });
-    const cacheClosure = () => {
-      for (const [path, data, mtime] of entries) {
-        this.am_.insertFile(path, data, mtime);
-      }
-
-      // Return the resolved directory to the package
-      // It is then used to access the package data by the access model `this.am`
-      return previewDir;
-    };
-    this.cache.set(path, cacheClosure);
-
-    // Trigger write out
-    return cacheClosure();
-  }
+/** Create a standalone ArrayBuffer copy of a typed array, safe for transfer. */
+function detachBuffer(data: Uint8Array): ArrayBuffer {
+  return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
 }
 
-const fetchGzip = async (url: string): Promise<Response> => {
-  const res = await fetch(url);
-  const decompressed = res.body!.pipeThrough(new DecompressionStream('gzip'));
-  return new Response(decompressed, { headers: { 'Content-Type': 'application/wasm' } });
-};
+let worker: Worker | null = null;
+let nextId = 1;
+// eslint-disable-next-line svelte/prefer-svelte-reactivity -- internal bookkeeping, not reactive state
+const pending = new Map<
+  number,
+  { resolve: (data?: ArrayBuffer) => void; reject: (e: Error) => void }
+>();
+let initResolve: (() => void) | null = null;
+let initReject: ((e: Error) => void) | null = null;
+let initializationPromise: Promise<void> | null = null;
+let isInitialized = false;
 
-export const initializeTypst = async () => {
-  if (initializationPromise) {
-    return initializationPromise;
-  }
+function getWorker(): Worker {
+  if (worker) return worker;
+
+  // In dev mode, reuse existing worker across HMR updates
   if (dev) {
-    const globalWithTypst = globalThis as typeof globalThis & {
-      typst?: typeof initializationPromise;
-    };
-    if (globalWithTypst.typst) {
-      initializationPromise = globalWithTypst.typst;
+    const g = globalThis as typeof globalThis & { __typstWorker?: Worker };
+    if (g.__typstWorker) {
+      worker = g.__typstWorker;
+      return worker;
+    }
+  }
+
+  worker = new Worker(new URL('./typst-worker/worker.ts', import.meta.url), {
+    type: 'module'
+  });
+
+  worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+    const msg = e.data;
+
+    switch (msg.type) {
+      case 'status':
+        loadingState.status = msg.status;
+        break;
+
+      case 'packageLoading':
+        packageLoadingState.name = msg.name;
+        packageLoadingState.downloaded = msg.downloaded;
+        break;
+
+      case 'initDone':
+        isInitialized = true;
+        initResolve?.();
+        initResolve = null;
+        initReject = null;
+        break;
+
+      case 'initError':
+        initReject?.(new Error(msg.error));
+        initResolve = null;
+        initReject = null;
+        initializationPromise = null;
+        break;
+
+      case 'result': {
+        const p = pending.get(msg.id);
+        if (p) {
+          pending.delete(msg.id);
+          p.resolve(msg.data);
+        }
+        break;
+      }
+
+      case 'error': {
+        const p = pending.get(msg.id);
+        if (p) {
+          pending.delete(msg.id);
+          p.reject(new Error(msg.error));
+        }
+        break;
+      }
+    }
+  };
+
+  worker.onerror = (e) => {
+    console.error('Typst worker error:', e);
+  };
+
+  if (dev) {
+    (globalThis as typeof globalThis & { __typstWorker?: Worker }).__typstWorker = worker;
+  }
+
+  return worker;
+}
+
+// ── Request helpers ────────────────────────────────────────────────────
+
+function request(
+  msg: Record<string, unknown>,
+  transfer?: Transferable[]
+): Promise<ArrayBuffer | undefined> {
+  const id = nextId++;
+  return new Promise((resolve, reject) => {
+    pending.set(id, { resolve, reject });
+    getWorker().postMessage({ ...msg, id }, { transfer: transfer ?? [] });
+  });
+}
+
+// ── Public API ─────────────────────────────────────────────────────────
+
+/** Prepare fonts and logos on the main thread, then send to worker. */
+export const initializeTypst = async () => {
+  if (initializationPromise) return initializationPromise;
+
+  if (dev) {
+    const g = globalThis as typeof globalThis & { __typstWorkerInit?: Promise<void> };
+    if (g.__typstWorkerInit) {
+      initializationPromise = g.__typstWorkerInit;
       return initializationPromise;
     }
   }
 
-  if (isInitialized) {
-    return;
-  }
+  if (isInitialized) return;
 
   initializationPromise = (async () => {
-    try {
-      // Prepare fonts (with IndexedDB caching)
-      loadingState.status = 'loading_fonts';
-      const fontsVersion: string = __FONTS_VERSION__;
-      const defaultBlobUrls = await loadFontsWithCache(DEFAULT_FONTS, fontsVersion);
+    // 1. Load fonts (main thread, with IndexedDB caching + progress tracking)
+    loadingState.status = 'loading_fonts';
+    downloadProgress.progress = 0;
+    downloadProgress.activeFiles = [];
 
-      // Also load any custom fonts from IndexedDB
-      const { getAllFonts } = await import('$lib/stores/fonts');
-      const allCached = await getAllFonts();
-      const customFonts = allCached.filter((f) => f.custom);
-      const customBlobUrls = customFonts.map((f) => {
-        const blob = new Blob([new Uint8Array(f.data)], { type: 'font/woff2' });
-        return URL.createObjectURL(blob);
-      });
+    const fontsVersion: string = __FONTS_VERSION__;
+    const defaultFontBlobUrls = await loadFontsWithCache(DEFAULT_FONTS, fontsVersion, (p) => {
+      downloadProgress.progress = p.progress;
+      downloadProgress.activeFiles = p.activeFiles;
+    });
 
-      const blobUrls = [...defaultBlobUrls, ...customBlobUrls];
+    // Reset download progress after fonts are loaded
+    downloadProgress.progress = 0;
+    downloadProgress.activeFiles = [];
 
-      // Configure WASM modules before any calls that trigger lazy init
-      loadingState.status = 'loading_wasm';
-      const accessModel = new MemoryAccessModel();
-      const injectedRegistry = new InjectedRegistry(accessModel);
+    // Fetch raw data for each default font (from the blob URLs)
+    const defaultFontData = await Promise.all(
+      defaultFontBlobUrls.map(async (blobUrl) => {
+        const res = await fetch(blobUrl);
+        return await res.arrayBuffer();
+      })
+    );
 
-      typst.setCompilerInitOptions({
-        getModule: () => (dev ? compilerWasmUrl : fetchGzip(compilerWasmUrl + '.gz'))
-      });
-      typst.setRendererInitOptions({
-        getModule: () => rendererWasmUrl
-      });
-      typst.use(
-        TypstSnippet.withPackageRegistry(injectedRegistry),
-        TypstSnippet.withAccessModel(accessModel),
-        TypstSnippet.disableDefaultFontAssets(),
-        TypstSnippet.preloadFonts(blobUrls)
+    // Load custom fonts
+    const allCached = await getAllFonts();
+    const customFonts = allCached.filter((f) => f.custom);
+    const customFontData = customFonts.map((f) => detachBuffer(new Uint8Array(f.data)));
+
+    const fontData = [...defaultFontData, ...customFontData];
+
+    // 2. Process logos (main thread – needs DOM APIs like Image/Canvas)
+    const logoScales: Record<string, number> = {};
+    const logoMappings: { path: string; data: ArrayBuffer }[] = [];
+
+    await Promise.all(
+      ISSUERS.map(async (issuer) => {
+        if (issuer.type === 'svg') {
+          const { svg: recentered, scale } = await recenterSvg(issuer.raw);
+          logoScales[issuer.key] = scale;
+          const redTinted = tintSvg(recentered, [220, 0, 0]);
+          const blackTinted = tintSvg(issuer.raw, [0, 0, 0], 0.25);
+          logoMappings.push(
+            {
+              path: `/stamp-${issuer.key}.svg`,
+              data: detachBuffer(redTinted)
+            },
+            {
+              path: `/watermark-${issuer.key}.svg`,
+              data: detachBuffer(blackTinted)
+            }
+          );
+        } else {
+          const [{ image: redTinted, scale }, { image: blackTinted }] = await Promise.all([
+            tintImage(issuer.url, [210, 0, 0], 1, true),
+            tintImage(issuer.url, [0, 0, 0], 0.25)
+          ]);
+          logoScales[issuer.key] = scale;
+          logoMappings.push(
+            {
+              path: `/stamp-${issuer.key}.png`,
+              data: detachBuffer(redTinted)
+            },
+            {
+              path: `/watermark-${issuer.key}.png`,
+              data: detachBuffer(blackTinted)
+            }
+          );
+        }
+      })
+    );
+
+    setLogoScales({ ...logoScales });
+
+    // 3. Send everything to the worker
+    const w = getWorker();
+    const transfer = [...fontData, ...logoMappings.map((m) => m.data)];
+
+    await new Promise<void>((resolve, reject) => {
+      initResolve = resolve;
+      initReject = reject;
+      w.postMessage(
+        {
+          type: 'init',
+          fontData,
+          logoMappings,
+          isDev: dev,
+          basePath: base
+        },
+        { transfer }
       );
-
-      // Load template files and assets (triggers compiler init)
-      loadingState.status = 'loading_templates';
-      await typst.addSource('/official-doc.typ', docTempl);
-      await typst.addSource('/tuzhang.typ', tuzhang);
-
-      // Tint logos and register as shadow files
-      await Promise.all(
-        ISSUERS.map(async (issuer) => {
-          if (issuer.type === 'svg') {
-            const { svg: recentered, scale } = await recenterSvg(issuer.raw);
-            console.log(issuer.key, scale);
-            logoScales[issuer.key] = scale;
-            const redTinted = tintSvg(recentered, [220, 0, 0]);
-            const blackTinted = tintSvg(issuer.raw, [0, 0, 0], 0.25);
-            await Promise.all([
-              typst.mapShadow(`/stamp-${issuer.key}.svg`, redTinted),
-              typst.mapShadow(`/watermark-${issuer.key}.svg`, blackTinted)
-            ]);
-          } else {
-            const [{ image: redTinted, scale: scale }, { image: blackTinted }] = await Promise.all([
-              tintImage(issuer.url, [210, 0, 0], 1, true),
-              tintImage(issuer.url, [0, 0, 0], 0.25)
-            ]);
-            console.log(issuer.key, scale);
-            logoScales[issuer.key] = scale;
-            await Promise.all([
-              typst.mapShadow(`/stamp-${issuer.key}.png`, redTinted),
-              typst.mapShadow(`/watermark-${issuer.key}.png`, blackTinted)
-            ]);
-          }
-        })
-      );
-
-      isInitialized = true;
-      syncLogoScales();
-      loadingState.status = '';
-      console.log(`Typst initialized`);
-    } catch (e) {
-      console.error('Error initializing Typst:', e);
-      initializationPromise = null;
-      throw e;
-    }
+    });
   })();
 
   if (dev) {
-    (globalThis as typeof globalThis & { typst?: typeof initializationPromise }).typst =
+    (globalThis as typeof globalThis & { __typstWorkerInit?: Promise<void> }).__typstWorkerInit =
       initializationPromise;
   }
 
@@ -260,4 +284,30 @@ export const waitForTypst = async () => {
   }
 };
 
-export default typst;
+// ── Proxy methods matching the old `typst` default export ──────────────
+
+async function addSource(path: string, content: string): Promise<void> {
+  await request({ type: 'addSource', path, content });
+}
+
+async function mapShadow(path: string, data: Uint8Array): Promise<void> {
+  const buf = detachBuffer(data);
+  await request({ type: 'mapShadow', path, data: buf }, [buf]);
+}
+
+async function unmapShadow(path: string): Promise<void> {
+  await request({ type: 'unmapShadow', path });
+}
+
+async function pdf(): Promise<Uint8Array | undefined> {
+  const buf = await request({ type: 'pdf' });
+  return buf ? new Uint8Array(buf) : undefined;
+}
+
+/**
+ * Proxy object that provides the same method interface as the old
+ * `$typst` default export, so call-sites need minimal changes.
+ */
+const typstProxy = { addSource, mapShadow, unmapShadow, pdf };
+
+export default typstProxy;

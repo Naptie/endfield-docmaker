@@ -74,33 +74,57 @@ export async function clearFontCache(): Promise<void> {
 }
 
 /**
- * Load fonts with IndexedDB caching. Fetches from network only when the
- * cache is missing or the version tag doesn't match.
+ * Load fonts with IndexedDB caching. Downloads uncached fonts in parallel
+ * with progress tracking, then caches them for next time.
+ *
+ * @param fonts    Font descriptors (name + URL).
+ * @param version  Cache version tag – when it changes the cache is invalidated.
+ * @param onProgress Optional callback receiving download progress updates.
+ * @returns Blob URLs for every font, in the same order as `fonts`.
  */
 export async function loadFontsWithCache(
   fonts: { name: string; url: string }[],
-  version: string
+  version: string,
+  onProgress?: (progress: import('$lib/utils/download').DownloadProgress) => void
 ): Promise<string[]> {
-  const blobUrls: string[] = [];
+  // 1. Check cache for each font
+  const cached = await Promise.all(fonts.map((f) => getCachedFont(f.name)));
+  const results: (Uint8Array | null)[] = cached.map((c) =>
+    c && c.version === version ? c.data : null
+  );
 
-  for (const font of fonts) {
-    let data: Uint8Array | undefined;
-
-    // Check cache
-    const cached = await getCachedFont(font.name);
-    if (cached && cached.version === version) {
-      data = cached.data;
-    } else {
-      // Fetch and cache
-      const res = await fetch(font.url);
-      const buf = await res.arrayBuffer();
-      data = new Uint8Array(buf);
-      await putFont({ name: font.name, data, version });
+  // 2. Determine which fonts need downloading
+  const toDownload: { name: string; url: string; idx: number }[] = [];
+  for (let i = 0; i < fonts.length; i++) {
+    if (!results[i]) {
+      toDownload.push({ ...fonts[i], idx: i });
     }
-
-    const blob = new Blob([data], { type: 'font/woff2' });
-    blobUrls.push(URL.createObjectURL(blob));
   }
 
-  return blobUrls;
+  // 3. Download uncached fonts in parallel with progress
+  if (toDownload.length > 0) {
+    const { downloadAll } = await import('$lib/utils/download');
+    const downloaded = await downloadAll(
+      toDownload.map((f) => ({ name: f.name, url: f.url })),
+      onProgress
+    );
+
+    // Store downloaded fonts into results & cache
+    await Promise.all(
+      downloaded.map(async (dl, i) => {
+        const idx = toDownload[i].idx;
+        results[idx] = dl.data;
+        await putFont({ name: dl.name, data: dl.data, version });
+      })
+    );
+  } else {
+    // All fonts were cached – report instant completion
+    onProgress?.({ progress: 1, activeFiles: [] });
+  }
+
+  // 4. Create blob URLs
+  return results.map((data) => {
+    const blob = new Blob([new Uint8Array(data!)], { type: 'font/woff2' });
+    return URL.createObjectURL(blob);
+  });
 }

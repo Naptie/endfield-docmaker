@@ -16,6 +16,7 @@
   "invalid_date": "日期无效",
   "issue_date": "签发日期（塔罗斯历）",
   "issuer": "文件签发方",
+  "issuer_code": "文号代字",
   "issuer_endfield_industries": "终末地工业",
   "issuer_has": "宏山科学院",
   "issuer_rhodes_island": "罗德岛",
@@ -26,6 +27,9 @@
   "kv_value_placeholder": "值",
   "language": "语言",
   "loading_fonts": "正在加载字体...",
+  "loading_fonts_count": "正在下载 {count} 个字体文件...",
+  "loading_fonts_named": "正在下载字体：{files}...",
+  "loading_package": "正在下载包：{name}...",
   "loading_templates": "正在加载模板...",
   "loading_wasm": "正在加载 Typst 编译器...",
   "locale_en": "English",
@@ -73,7 +77,8 @@
   "testpaper_par_justify": "段落两端对齐",
   "testpaper_show_answer": "显示答案",
   "testpaper_show_score_box": "显示评分框",
-  "testpaper_show_secret": "显示密级",
+  "testpaper_secret": "密级",
+  "testpaper_secret_placeholder": "绝密",
   "testpaper_subject": "科目",
   "testpaper_subject_placeholder": "数学",
   "testpaper_title": "试卷标题",
@@ -81,4 +86,4 @@
   "testpaper_year": "年份（塔罗斯历）",
   "toggle_theme": "切换主题",
   "view_on_github": "在 GitHub 上查看"
-}
+  }
