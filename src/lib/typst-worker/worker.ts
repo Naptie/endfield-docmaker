@@ -5,8 +5,8 @@
  * generation) happen here so the main thread stays responsive.
  */
 
-import rendererWasmUrl from '@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url';
 import compilerWasmUrl from '@myriaddreamin/typst-ts-web-compiler/pkg/typst_ts_web_compiler_bg.wasm?url';
+import rendererWasmUrl from '@myriaddreamin/typst-ts-renderer/pkg/typst_ts_renderer_bg.wasm?url';
 import { FetchPackageRegistry, MemoryAccessModel, $typst as typst } from '@myriaddreamin/typst.ts';
 import { TypstSnippet } from '@myriaddreamin/typst.ts/dist/esm/contrib/snippet.mjs';
 import type { WritableAccessModel } from '@myriaddreamin/typst.ts/dist/esm/fs/index.mjs';
@@ -15,6 +15,8 @@ import type {
   PackageSpec
 } from '@myriaddreamin/typst.ts/dist/esm/internal.types.mjs';
 import { gzipSync } from 'fflate';
+
+import { fetchWasmResponse } from '$lib/utils/wasm';
 
 import docTempl from '$lib/assets/typst/official-doc.typ?raw';
 import tuzhang from '$lib/assets/typst/tuzhang.typ?raw';
@@ -47,14 +49,15 @@ const isTarData = (data: Uint8Array): boolean =>
 // ── Package registry with status reporting ─────────────────────────────
 
 class WorkerPackageRegistry extends FetchPackageRegistry {
-  private basePath: string;
   private downloadCount = 0;
   private accessModel: WritableAccessModel;
+  /** Packages embedded in the bundle, keyed by `name:version`. */
+  private preloaded: Map<string, Uint8Array>;
 
-  constructor(am: WritableAccessModel, basePath: string) {
+  constructor(am: WritableAccessModel, preloaded: Map<string, Uint8Array>) {
     super(am);
     this.accessModel = am;
-    this.basePath = basePath;
+    this.preloaded = preloaded;
   }
 
   pullPackageData(path: PackageSpec): Uint8Array | undefined {
@@ -87,15 +90,23 @@ class WorkerPackageRegistry extends FetchPackageRegistry {
     switch (path.namespace) {
       case 'preview':
         return `https://packages.typst.org/preview/${path.name}-${path.version}.tar.gz`;
-      case 'this':
-        return `${this.basePath}/typst/${path.name}-${path.version}.tar.gz`;
       default:
         return super.resolvePath(path);
     }
   }
 
   resolve(spec: PackageSpec, context: PackageResolveContext): string | undefined {
-    if (spec.namespace !== 'preview' && spec.namespace !== 'this') {
+    // Vendored packages are served from memory – no network involved.
+    if (spec.namespace === 'this') {
+      const key = `${spec.name}:${spec.version}`;
+      const cached = this.cache.get(key);
+      if (cached) return cached();
+      const data = this.preloaded.get(key);
+      if (!data) return undefined;
+      return this.installPackage(key, spec, data, context);
+    }
+
+    if (spec.namespace !== 'preview') {
       return undefined;
     }
 
@@ -110,6 +121,16 @@ class WorkerPackageRegistry extends FetchPackageRegistry {
     if (!data) {
       return undefined;
     }
+    return this.installPackage(path, spec, data, context);
+  }
+
+  /** Extract a gzip tarball into the access model and cache its location. */
+  private installPackage(
+    cacheKey: string,
+    spec: PackageSpec,
+    data: Uint8Array,
+    context: PackageResolveContext
+  ): string | undefined {
     const normalizedData = !isGzipData(data) && isTarData(data) ? gzipSync(data) : data;
     if (!isGzipData(normalizedData)) {
       const firstBytes = Array.from(data.subarray(0, 8))
@@ -133,18 +154,12 @@ class WorkerPackageRegistry extends FetchPackageRegistry {
       }
       return previewDir;
     };
-    this.cache.set(path, cacheClosure);
+    this.cache.set(cacheKey, cacheClosure);
     return cacheClosure();
   }
 }
 
 // ── WASM fetch helper ──────────────────────────────────────────────────
-
-const fetchGzip = async (url: string): Promise<Response> => {
-  const res = await fetch(url);
-  const decompressed = res.body!.pipeThrough(new DecompressionStream('gzip'));
-  return new Response(decompressed, { headers: { 'Content-Type': 'application/wasm' } });
-};
 
 // ── Initialization ─────────────────────────────────────────────────────
 
@@ -152,28 +167,35 @@ async function handleInit(msg: InitMessage) {
   try {
     setStatus('loading_fonts');
 
-    // Create blob URLs from the raw font data
-    const blobUrls: string[] = msg.fontData.map((buf) => {
-      const blob = new Blob([new Uint8Array(buf)], { type: 'font/woff2' });
-      return URL.createObjectURL(blob);
-    });
-
     // Configure WASM modules
     setStatus('loading_wasm');
     const accessModel = new MemoryAccessModel();
-    const registry = new WorkerPackageRegistry(accessModel, msg.basePath);
+
+    // Decode embedded packages (base64 gzip tarballs from the main thread)
+    const preloaded = new Map<string, Uint8Array>();
+    for (const pkg of msg.packages) {
+      const binary = atob(pkg.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      preloaded.set(`${pkg.name}:${pkg.version}`, bytes);
+    }
+    const registry = new WorkerPackageRegistry(accessModel, preloaded);
 
     typst.setCompilerInitOptions({
-      getModule: () => (msg.isDev ? compilerWasmUrl : fetchGzip(compilerWasmUrl + '.gz'))
+      getModule: () => fetchWasmResponse(compilerWasmUrl)
     });
+    // The worker also converts documents to SVG (glyph paths), which runs on
+    // the renderer role.
     typst.setRendererInitOptions({
-      getModule: () => rendererWasmUrl
+      getModule: () => fetchWasmResponse(rendererWasmUrl)
     });
     typst.use(
       TypstSnippet.withPackageRegistry(registry),
       TypstSnippet.withAccessModel(accessModel),
       TypstSnippet.disableDefaultFontAssets(),
-      TypstSnippet.preloadFonts(blobUrls)
+      // Raw bytes – avoids blob-URL round trips (and any CSP restrictions on
+      // them) inside sandboxed hosts.
+      TypstSnippet.preloadFonts(msg.fontData.map((buf) => new Uint8Array(buf)))
     );
 
     // Load template files (triggers compiler init)
@@ -236,6 +258,19 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
       try {
         await typst.unmapShadow(msg.path);
         post({ type: 'result', id: msg.id });
+      } catch (err) {
+        post({
+          type: 'error',
+          id: msg.id,
+          error: err instanceof Error ? err.message : String(err)
+        });
+      }
+      break;
+
+    case 'svg':
+      try {
+        const svg = await typst.svg();
+        post({ type: 'svgResult', id: msg.id, svg: svg ?? '' });
       } catch (err) {
         post({
           type: 'error',

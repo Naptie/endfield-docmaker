@@ -21,6 +21,11 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
-# Paraglide
+
+# Paraglide (generated)
 src/lib/paraglide
 project.inlang/cache/
+
+# Local font backups (superseded builds)
+src/lib/assets/fonts/*.bak.ttf
+src/lib/assets/fonts/*.bak.cff

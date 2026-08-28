@@ -109,6 +109,11 @@ export async function downloadAll(
       offset += chunk.byteLength;
     }
 
+    // Integrity guard – a short read would otherwise be cached as if complete.
+    if (totals[idx] && received !== totals[idx]) {
+      throw new Error(`Truncated download: ${item.name} (${received}/${totals[idx]} bytes)`);
+    }
+
     active.delete(item.name);
     emitProgress();
     return { name: item.name, data };

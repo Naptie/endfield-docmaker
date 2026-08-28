@@ -6,8 +6,6 @@ import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { compression, defineAlgorithm } from 'vite-plugin-compression2';
-import { constants } from 'zlib';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
@@ -24,6 +22,9 @@ for (const file of fontFiles) {
 const fontsVersion = fontsHash.digest('hex').slice(0, 12);
 
 export default defineConfig({
+  assetsInclude: ['**/*.tar.gz'],
+  // pdf.js's worker is ESM-only; the default IIFE bundle breaks it silently.
+  worker: { format: 'es' },
   plugins: [
     tailwindcss(),
     sveltekit(),
@@ -39,25 +40,6 @@ export default defineConfig({
             ['zh', `:protocol://:domain(.*)::port?${basePath}/:path(.*)?`]
           ]
         }
-      ]
-    }),
-    compression({
-      threshold: 1024 * 1024,
-      include: /\.(html|xml|css|js|mjs|wasm|json|svg|otf|ttf|otc|ttc)$/,
-      exclude: /typst_ts_web_compiler_bg[.-][^.]+\.wasm$/,
-      algorithms: [
-        defineAlgorithm('gzip', {
-          level: constants.Z_BEST_COMPRESSION
-        })
-      ]
-    }),
-    compression({
-      deleteOriginalAssets: true,
-      include: /typst_ts_web_compiler_bg[.-][^.]+\.wasm$/,
-      algorithms: [
-        defineAlgorithm('gzip', {
-          level: constants.Z_BEST_COMPRESSION
-        })
       ]
     })
   ],

@@ -10,19 +10,50 @@ import fontSimFang from '$lib/assets/fonts/SIMFANG.TTF?url';
 import fontSimHei from '$lib/assets/fonts/SIMHEI.TTF?url';
 import fontSimKai from '$lib/assets/fonts/SIMKAI.TTF?url';
 import fontTimesNewRoman from '$lib/assets/fonts/times.ttf?url';
-import fontNotoSans from '$lib/assets/fonts/NotoSansCJKsc-Regular.otf?url';
-import fontNotoSerif from '$lib/assets/fonts/NotoSerifCJKsc-Regular.otf?url';
-import fontSTIXTwoMath from '$lib/assets/fonts/STIXTwoMath-Regular.otf?url';
-import fontTeXGyreTermes from '$lib/assets/fonts/texgyretermes-math.otf?url';
+// NOTE: font assets must use a `.ttf`/`.TTF` extension – the Bilibili Toy
+// static layer 404s `.otf` files. The math fonts are genuine TrueType builds
+// produced from the upstream OTFs via `scripts/otf2ttf.py` (MATH table kept).
+// The Noto CJK files are the official *static* `NotoSansCJKsc-Regular.otf` /
+// `NotoSerifCJKsc-Regular.otf` from the noto-cjk repo (Sans|Serif/OTF/
+// SimplifiedChinese), renamed to `.ttf`. They are CFF/OTTO internally, but
+// that's what ships to Typst's compiler/renderer and the payload stays small
+// (~16/24 MB) – the full variable TTF builds (36/60 MB) made the Toy preview
+// take ~1 min to first render in the sandbox.
+import fontNotoSans from '$lib/assets/fonts/NotoSansCJKsc-Regular.ttf?url';
+import fontNotoSerif from '$lib/assets/fonts/NotoSerifCJKsc-Regular.ttf?url';
+import fontSTIXTwoMath from '$lib/assets/fonts/STIXTwoMath-Regular.ttf?url';
+import fontTeXGyreTermes from '$lib/assets/fonts/texgyretermes-math.ttf?url';
 import fontJBMono from '$lib/assets/fonts/JetBrainsMono-VariableFont_wght.ttf?url';
 
 import { tintImage, tintSvg, recenterSvg } from '$lib/utils/image';
 import { dev } from '$app/environment';
-import { base } from '$app/paths';
 import { ISSUERS, setLogoScales } from './constants';
 import { loadFontsWithCache, getAllFonts } from '$lib/stores/fonts';
 
 import type { WorkerResponse, LoadingStatus } from '$lib/typst-worker/protocol';
+
+/**
+ * Vendored Typst packages embedded into the bundle at build time.
+ *
+ * Any `*.tar.gz` placed in `src/lib/assets/typst-packages/` following the
+ * `<name>-<version>.tar.gz` naming scheme is inlined automatically (Vite
+ * `?inline`), so the compiler never fetches packages over the network –
+ * important for sandboxes like Bilibili Toy that don't serve arbitrary
+ * static paths.
+ */
+const packageModules = import.meta.glob<string>('./assets/typst-packages/*.tar.gz', {
+  query: '?inline',
+  import: 'default',
+  eager: true
+});
+
+const VENDORED_PACKAGES: { name: string; version: string; data: string }[] = Object.entries(
+  packageModules
+).map(([path, dataUrl]) => {
+  const match = path.match(/\/([^/]+)-(\d+\.\d+\.\d+)\.tar\.gz$/);
+  if (!match) throw new Error(`Unrecognized vendored package file name: ${path}`);
+  return { name: match[1], version: match[2], data: dataUrl.slice(dataUrl.indexOf(',') + 1) };
+});
 
 export const DEFAULT_FONTS: { name: string; url: string }[] = [
   { name: 'FZXIAOBIAOSONG-B05.TTF', url: fontXiaoBiaoSong },
@@ -30,10 +61,10 @@ export const DEFAULT_FONTS: { name: string; url: string }[] = [
   { name: 'SIMHEI.TTF', url: fontSimHei },
   { name: 'SIMKAI.TTF', url: fontSimKai },
   { name: 'times.ttf', url: fontTimesNewRoman },
-  { name: 'NotoSansCJKsc-Regular.otf', url: fontNotoSans },
-  { name: 'NotoSerifCJKsc-Regular.otf', url: fontNotoSerif },
-  { name: 'STIXTwoMath-Regular.otf', url: fontSTIXTwoMath },
-  { name: 'texgyretermes-math.otf', url: fontTeXGyreTermes },
+  { name: 'NotoSansCJKsc-Regular.ttf', url: fontNotoSans },
+  { name: 'NotoSerifCJKsc-Regular.ttf', url: fontNotoSerif },
+  { name: 'STIXTwoMath-Regular.ttf', url: fontSTIXTwoMath },
+  { name: 'texgyretermes-math.ttf', url: fontTeXGyreTermes },
   { name: 'JetBrainsMono-VariableFont_wght.ttf', url: fontJBMono }
 ];
 
@@ -122,6 +153,17 @@ function getWorker(): Worker {
         break;
       }
 
+      case 'svgResult': {
+        const p = pending.get(msg.id);
+        if (p) {
+          pending.delete(msg.id);
+          // SVG payloads travel as strings, not ArrayBuffers – resolve the
+          // pending request with the string the worker sent back.
+          p.resolve(msg.svg as unknown as ArrayBuffer);
+        }
+        break;
+      }
+
       case 'error': {
         const p = pending.get(msg.id);
         if (p) {
@@ -180,7 +222,7 @@ export const initializeTypst = async () => {
     downloadProgress.activeFiles = [];
 
     const fontsVersion: string = __FONTS_VERSION__;
-    const defaultFontBlobUrls = await loadFontsWithCache(DEFAULT_FONTS, fontsVersion, (p) => {
+    const defaultFontData = await loadFontsWithCache(DEFAULT_FONTS, fontsVersion, (p) => {
       downloadProgress.progress = p.progress;
       downloadProgress.activeFiles = p.activeFiles;
     });
@@ -189,20 +231,15 @@ export const initializeTypst = async () => {
     downloadProgress.progress = 0;
     downloadProgress.activeFiles = [];
 
-    // Fetch raw data for each default font (from the blob URLs)
-    const defaultFontData = await Promise.all(
-      defaultFontBlobUrls.map(async (blobUrl) => {
-        const res = await fetch(blobUrl);
-        return await res.arrayBuffer();
-      })
-    );
-
     // Load custom fonts
     const allCached = await getAllFonts();
     const customFonts = allCached.filter((f) => f.custom);
     const customFontData = customFonts.map((f) => detachBuffer(new Uint8Array(f.data)));
 
-    const fontData = [...defaultFontData, ...customFontData];
+    const fontData: ArrayBuffer[] = [
+      ...defaultFontData.map((d) => detachBuffer(d)),
+      ...customFontData
+    ];
 
     // 2. Process logos (main thread – needs DOM APIs like Image/Canvas)
     const logoScales: Record<string, number> = {};
@@ -259,8 +296,7 @@ export const initializeTypst = async () => {
           type: 'init',
           fontData,
           logoMappings,
-          isDev: dev,
-          basePath: base
+          packages: VENDORED_PACKAGES
         },
         { transfer }
       );
@@ -304,10 +340,16 @@ async function pdf(): Promise<Uint8Array | undefined> {
   return buf ? new Uint8Array(buf) : undefined;
 }
 
+/** Render the current document to a whole-document SVG string. */
+async function svg(): Promise<string | undefined> {
+  const res = await request({ type: 'svg' });
+  return typeof res === 'string' ? res : undefined;
+}
+
 /**
  * Proxy object that provides the same method interface as the old
  * `$typst` default export, so call-sites need minimal changes.
  */
-const typstProxy = { addSource, mapShadow, unmapShadow, pdf };
+const typstProxy = { addSource, mapShadow, unmapShadow, pdf, svg };
 
 export default typstProxy;

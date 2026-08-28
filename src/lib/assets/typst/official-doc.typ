@@ -1,8 +1,8 @@
 // Credit: ParaN3xus (https://github.com/ParaN3xus)
 
-#import "@preview/cuti:0.3.0": fakebold, show-cn-fakebold
-#import "@preview/numbly:0.1.0": numbly
-#import "@preview/suiji:0.5.1": gen-rng-f, random-f
+#import "@this/cuti:0.3.0": fakebold, show-cn-fakebold
+#import "@this/numbly:0.1.0": numbly
+#import "@this/suiji:0.5.1": gen-rng-f, random-f
 #import "tuzhang.typ": circular_stamp
 
 #let pure-v(length) = block(v(length), width: 100%, outset: 0pt, inset: 0pt, below: 0pt, spacing: 0pt)

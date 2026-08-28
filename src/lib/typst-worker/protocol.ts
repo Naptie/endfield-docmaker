@@ -10,10 +10,11 @@ export interface InitMessage {
   fontData: ArrayBuffer[];
   /** Logo/asset files to map into the VFS. */
   logoMappings: { path: string; data: ArrayBuffer }[];
-  /** Whether we're in dev mode. */
-  isDev: boolean;
-  /** SvelteKit base path. */
-  basePath: string;
+  /**
+   * Vendored Typst packages embedded in the bundle (base64 gzip tarballs),
+   * served to the compiler without any network request.
+   */
+  packages: { name: string; version: string; data: string }[];
 }
 
 export interface AddSourceMessage {
@@ -41,8 +42,14 @@ export interface PdfMessage {
   id: number;
 }
 
+/** Render the current document to a whole-document SVG string. */
+export interface SvgMessage {
+  type: 'svg';
+  id: number;
+}
+
 export type WorkerRequest =
-  InitMessage | AddSourceMessage | MapShadowMessage | UnmapShadowMessage | PdfMessage;
+  InitMessage | AddSourceMessage | MapShadowMessage | UnmapShadowMessage | PdfMessage | SvgMessage;
 
 // ── Worker → Main ──────────────────────────────────────────────────────
 
@@ -76,6 +83,12 @@ export interface ResultMessage {
   data?: ArrayBuffer;
 }
 
+export interface SvgResultMessage {
+  type: 'svgResult';
+  id: number;
+  svg: string;
+}
+
 export interface ErrorMessage {
   type: 'error';
   id: number;
@@ -88,4 +101,5 @@ export type WorkerResponse =
   | InitDoneMessage
   | InitErrorMessage
   | ResultMessage
+  | SvgResultMessage
   | ErrorMessage;

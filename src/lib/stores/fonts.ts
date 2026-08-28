@@ -62,35 +62,51 @@ export async function removeFont(name: string): Promise<void> {
   });
 }
 
-/** Clear all cached fonts. */
-export async function clearFontCache(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(FONTS_STORE, 'readwrite');
-    tx.objectStore(FONTS_STORE).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
+/** Minimum plausible size for a real font file (guards against stub/empty responses). */
+const MIN_FONT_BYTES = 1000;
+
+/**
+ * Cheap structural check that `data` actually looks like a font.
+ *
+ * Guards the cache against truncated or garbage responses (e.g. from flaky
+ * CDNs): Typst skips unparseable fonts *silently*, which used to surface much
+ * later as "unknown font family" for every family at once.
+ */
+export function looksLikeFont(data: Uint8Array): boolean {
+  if (data.length < MIN_FONT_BYTES) return false;
+  // sfnt versions: 0x00010000 (TTF/OTF), 'OTTO' (CFF), 'true' (classic TrueType)
+  if (data[0] === 0x00 && data[1] === 0x01 && data[2] === 0x00 && data[3] === 0x00) return true;
+  if (data[0] === 0x4f && data[1] === 0x54 && data[2] === 0x54 && data[3] === 0x4f) return true;
+  if (data[0] === 0x74 && data[1] === 0x72 && data[2] === 0x75 && data[3] === 0x65) return true;
+  // WOFF / WOFF2
+  if (data[0] === 0x77 && data[1] === 0x4f && data[2] === 0x46 && data[3] === 0x46) return true;
+  if (data[0] === 0x77 && data[1] === 0x4f && data[2] === 0x46 && data[3] === 0x32) return true;
+  return false;
 }
 
 /**
  * Load fonts with IndexedDB caching. Downloads uncached fonts in parallel
  * with progress tracking, then caches them for next time.
  *
+ * Cached entries are validated before use; corrupt or truncated entries are
+ * re-downloaded automatically, so a bad first visit can never poison the
+ * cache permanently.
+ *
  * @param fonts    Font descriptors (name + URL).
  * @param version  Cache version tag – when it changes the cache is invalidated.
  * @param onProgress Optional callback receiving download progress updates.
- * @returns Blob URLs for every font, in the same order as `fonts`.
+ * @returns Raw font bytes for every font, in the same order as `fonts`.
  */
 export async function loadFontsWithCache(
   fonts: { name: string; url: string }[],
   version: string,
   onProgress?: (progress: import('$lib/utils/download').DownloadProgress) => void
-): Promise<string[]> {
-  // 1. Check cache for each font
+): Promise<Uint8Array[]> {
+  // 1. Check cache for each font – entries must pass the structural check,
+  //    otherwise they are treated as absent and refreshed.
   const cached = await Promise.all(fonts.map((f) => getCachedFont(f.name)));
   const results: (Uint8Array | null)[] = cached.map((c) =>
-    c && c.version === version ? c.data : null
+    c && c.version === version && looksLikeFont(c.data) ? c.data : null
   );
 
   // 2. Determine which fonts need downloading
@@ -122,9 +138,13 @@ export async function loadFontsWithCache(
     onProgress?.({ progress: 1, activeFiles: [] });
   }
 
-  // 4. Create blob URLs
-  return results.map((data) => {
-    const blob = new Blob([new Uint8Array(data!)], { type: 'font/woff2' });
-    return URL.createObjectURL(blob);
-  });
+  // 4. Final sanity pass – never hand Typst a non-font silently
+  const invalid = fonts
+    .filter((_, i) => !results[i] || !looksLikeFont(results[i]!))
+    .map((f) => f.name);
+  if (invalid.length > 0) {
+    throw new Error(`Failed to load valid font data for: ${invalid.join(', ')}`);
+  }
+
+  return results as Uint8Array[];
 }
