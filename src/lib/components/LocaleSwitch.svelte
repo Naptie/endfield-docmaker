@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { base } from '$app/paths';
   import { getLocale, locales, localizeHref } from '$lib/paraglide/runtime';
   import { m } from '$lib/paraglide/messages';
   import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select';
@@ -21,11 +22,14 @@
 
   /**
    * Convert a root-relative URL (`/en/`, `/`) into a page-relative one
-   * (`./en/`, `./`). Toy-hosted pages live under `/toy/<slug>/`, where a
-   * leading slash would resolve to the site root and 404. The page itself
-   * uses relative asset URLs, so relative locale links stay correct there.
+   * (`./en/`, `./`). Only needed on deployments without a base path (e.g.
+   * Bilibili Toy under `/toy/<slug>/`), where a leading slash would resolve to
+   * the site root and 404. When a base path is configured (GitHub Pages sets
+   * `BASE_PATH`), `localizeHref` already returns correct root-relative URLs
+   * that include the base – prepending `.` there would double it.
    */
-  function relativeHref(href: string): string {
+  function pageRelativeHref(href: string): string {
+    if (base) return href;
     if (href.startsWith('/')) return `.${href}`;
     return href;
   }
@@ -48,10 +52,10 @@
     </SelectContent>
   </Select>
 
-  <!-- Hidden links for SEO / prerendering (page-relative – safe under any mount path) -->
+  <!-- Hidden links for SEO / prerendering (page-relative on Toy, base-aware elsewhere) -->
   <div style="display:none">
     {#each locales as locale (locale)}
-      <a href={relativeHref(localizeHref(page.url.pathname, { locale }))}>{locale}</a>
+      <a href={pageRelativeHref(localizeHref(page.url.pathname, { locale }))}>{locale}</a>
     {/each}
   </div>
 {/if}
